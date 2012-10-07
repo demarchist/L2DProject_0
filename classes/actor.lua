@@ -15,7 +15,7 @@ function Actor:new(name, world, x, y)
 	object.body = love.physics.newBody(world, x, y, "dynamic")
 	object.shape = love.physics.newCircleShape(10)
 	object.fixture = love.physics.newFixture(object.body,object.shape,1)
-	object.fixture:setUserData(self)
+	object.fixture:setUserData(object)
 	object.fixture:setRestitution(0.9)
 	object.body:isFixedRotation(false)
 	object.body:setAngle(math.pi/4)
@@ -31,13 +31,13 @@ function Actor:getName()
 	return(self.name)
 end
 
-function Actor:getBody()
-	return(body)
-end
-
 function Actor:setObjective(x,y)
 	self.objPoint.x = x
 	self.objPoint.y = y
+end
+
+function Actor:getSelected()
+	return(self.selected)
 end
 
 function Actor:setSelected(lSelected)
@@ -101,11 +101,11 @@ function Actor:draw()
 	--love.graphics.print(math.deg(self.objTheta), bodyWorldX - (self.nametagFont:getWidth(math.deg(self.objTheta))/2), bodyWorldY + (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
 	
 	--Selection Box
-	love.graphics.print(tostring(self.selected), bodyWorldX - (self.nametagFont:getWidth(tostring(self.selected))/2), bodyWorldY + (self.nametagFont:getHeight()),0,1,1,0,0,0,0)
+	--love.graphics.print(tostring(self.selected), bodyWorldX - (self.nametagFont:getWidth(tostring(self.selected)) / 2), bodyWorldY + (self.nametagFont:getHeight()),0,1,1,0,0,0,0)
 	if(self.selected == true) then
-		
+		love.graphics.setColor(255,255,255)
 		local topLeftX, topLeftY, bottomRightX, bottomRightY = self.shape:computeAABB( 0, 0, self.body:getAngle(), 1 )
-		love.graphics.rectangle("line", topLeftX, topLeftY, (bottomRightX - topLeftX), (bottomRightY - topLeftY))
+		love.graphics.rectangle("line", bodyWorldX - math.abs(topLeftX), bodyWorldY - math.abs(topLeftY), (bottomRightX - topLeftX), (bottomRightY - topLeftY))
 	end
 	
 end

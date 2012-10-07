@@ -20,10 +20,6 @@ function Game:new()
 
 	table.insert(object.actors,Actor:new("Hero", object.world, 100, -100))
 	table.insert(object.actors,Actor:new("Monster", object.world, -50, 50))
-	--object.actors[1]:setObjective(100,100)
-	--object.actors[2]:setObjective(150,50)
-
-	object.debug = "Ho"
 	
 	setmetatable(object, { __index = Game })  -- Inheritance
 
@@ -47,7 +43,6 @@ end
 
 function Game:drawWorld()
 	self.cam:attach()
-
 	for i = 1, # self.actors do
 		self.actors[i]:draw()
 	end
@@ -59,12 +54,12 @@ function Game:drawWorld()
 		love.graphics.rectangle("line", self.selectBox[2], self.selectBox[3], self.selectBox[4]  - self.selectBox[2], self.selectBox[5] - self.selectBox[3])
 	end
 
+	--[[
 	local topLeftX, topLeftY = self.cam:worldCoords(self.selectBox[2], self.selectBox[3])
 	local bottomRightX, bottomRightY = self.cam:worldCoords(self.selectBox[4], self.selectBox[5])
-	local debugText = self.debug .. " - [" .. tostring(self.selectBox[1]) .. ", " .. tostring(topLeftX) .. ", " .. tostring(topLeftY) .. ", " .. tostring(bottomRightX) .. ", " .. tostring(bottomRightY) .. "]"
-
+	local debugText = "[" .. tostring(self.selectBox[1]) .. ", " .. tostring(topLeftX) .. ", " .. tostring(topLeftY) .. ", " .. tostring(bottomRightX) .. ", " .. tostring(bottomRightY) .. "]"
 	love.graphics.print(debugText, (love.graphics.getWidth() / 2), love.graphics.getHeight() - 100,0,1,1,0,0,0,0)
-	--love.graphics.print(tostring(self.selectBox[1]) .. ", " .. tostring(self.selectBox[2]) .. ", " .. tostring(self.selectBox[3]) .. ", " .. tostring(self.selectBox[4]) .. ", " .. tostring(self.selectBox[5]), love.graphics.getWidth()/2, love.graphics.getHeight() - 100,0,1,1,0,0,0,0)
+	]]
 	
 end
 
@@ -82,18 +77,33 @@ function Game:mousereleased(x, y, button)
 		self.selectBox[4] = x
 		self.selectBox[5] = y
 
-		local topLeftX, topLeftY = self.cam:worldCoords(self.selectBox[2], self.selectBox[3])
-		local bottomRightX, bottomRightY = self.cam:worldCoords(self.selectBox[4], self.selectBox[5])
+		for i = 1, # self.actors do
+			self.actors[i]:setSelected(false)
+		end
+
+		local topLeftX, topLeftY = self.cam:worldCoords(math.min(self.selectBox[2], self.selectBox[4]), math.min(self.selectBox[3],self.selectBox[5]))
+		local bottomRightX, bottomRightY = self.cam:worldCoords(math.max(self.selectBox[2], self.selectBox[4]), math.max(self.selectBox[3],self.selectBox[5]))
+
 		self.world:queryBoundingBox(topLeftX, topLeftY, bottomRightX, bottomRightY, self.bbQueryCallback)
+	elseif(button == "r") then
+		for i = 1, # self.actors do
+			if(self.actors[i]:getSelected() == true) then
+				local worldX, worldY = self.cam:worldCoords(x, y)
+				self.actors[i]:setObjective(worldX, worldY)
+			end
+		end
 	end
 end
 
-function Game:bbQueryCallback(lFixture)
-	self.debug = "Hey"
+function Game.bbQueryCallback(lFixture)
 	if lFixture ~= nil then
+		--print(lFixture, ' - ', type(lFixture))
 		local lActor = lFixture:getUserData()
 		if lActor ~= nil then
+			--print(lActor, ' - ', type(lActor))
+			--print(lActor.selected)
 			lActor:setSelected(true)
+			--print(lActor.selected)
 		end
 	end
 	return(true)
