@@ -13,7 +13,7 @@ Object = {
 		class = type(class) == 'table' and class.name or class
 
 		local c = self.class
-		while (c) do
+		while c do
 			if c.name == class then
 				return true
 			end
