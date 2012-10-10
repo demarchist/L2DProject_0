@@ -8,26 +8,26 @@ require('classes.Vector')
 Actor = Class("Actor")
 
 function Actor:new ( init )
-	init = init or {}
+	local actor = init or {}
 
-	init.name = init.name or 0
-	init.world = init.world or 0
-	init.objPoint = nil
-	init.selected = false
+	actor.name = actor.name or 0
+	actor.world = actor.world or 0
+	actor.objPoint = nil
+	actor.selected = false
 
-	init.body = love.physics.newBody(init.world, init.x, init.y, "dynamic")
-	init.shape = love.physics.newCircleShape(10)
-	init.fixture = love.physics.newFixture(init.body, init.shape, 1)
-	init.fixture:setUserData(init)
-	init.fixture:setRestitution(0.9) --Unitless
-	init.body:isFixedRotation(false)
-	init.body:setAngle(0) --Radians
-	init.objTheta = 0 --Radians
-	init.nametagFont = love.graphics.newFont(10) -- the number denotes the font size
+	actor.body = love.physics.newBody(actor.world, actor.x, actor.y, 'dynamic')
+	actor.shape = love.physics.newCircleShape(10)
+	actor.fixture = love.physics.newFixture(actor.body, actor.shape, 1)
+	actor.fixture:setUserData(actor)
+	actor.fixture:setRestitution(0.9) --Unitless
+	actor.body:isFixedRotation(false)
+	actor.body:setAngle(0) --Radians
+	actor.objTheta = 0 --Radians
+	actor.nametagFont = love.graphics.newFont(10) -- the number denotes the font size
 
-	Actor.super.new(self, init)
+	Actor.super.new(self, actor)
 
-	return(init)
+	return(actor)
 end
 
 function Actor:getName()
@@ -55,12 +55,12 @@ function Actor:update()
 	if(self.objPoint ~= nil) then
 		if((math.abs(self.body:getX() - self.objPoint.x) > 5) or
 		   (math.abs(self.body:getY() - self.objPoint.y) > 5)) then
-		   	local bodyVector = Vector:new({x = self.body:getX(), y = self.body:getY()})
+			local bodyVector = Vector:new({x = self.body:getX(), y = self.body:getY()})
 			local vectorToObj = self.objPoint - bodyVector
 			local directionUnitVector = {x = math.cos(self.body:getAngle()), y = math.sin(self.body:getAngle())}
 
 			self.objTheta = math.atan2(directionUnitVector.x * vectorToObj:unit().y - directionUnitVector.y * vectorToObj:unit().x,
-						   directionUnitVector.x * vectorToObj:unit().x + directionUnitVector.y * vectorToObj:unit().y)
+			                           directionUnitVector.x * vectorToObj:unit().x + directionUnitVector.y * vectorToObj:unit().y)
 
 			if(math.abs(self.objTheta) > math.pi / 20) then
 				self.body:applyAngularImpulse(50 * (self.objTheta / math.abs(self.objTheta)))
@@ -71,7 +71,7 @@ function Actor:update()
 				--for now I'll cheat.
 				self.body:setAngularVelocity(0)
 				self.body:setAngle(self.body:getAngle() + self.objTheta)
-	
+
 				--I'll need to limit maximum linear velocity.
 				self.body:applyLinearImpulse(vectorToObj:unit().x, vectorToObj:unit().y)
 			end
@@ -120,7 +120,7 @@ function Actor:draw()
 
 	--print objTheta
 	--love.graphics.print(math.deg(self.objTheta), bodyWorldPos.x - (self.nametagFont:getWidth(math.deg(self.objTheta))/2), bodyWorldPos.y + (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
-	
+
 	--Selection Box
 	--love.graphics.print(tostring(self.selected), bodyWorldPos.x - (self.nametagFont:getWidth(tostring(self.selected)) / 2), bodyWorldPos.y + (self.nametagFont:getHeight()),0,1,1,0,0,0,0)
 	if(self.selected == true) then
@@ -128,5 +128,5 @@ function Actor:draw()
 		local topLeftX, topLeftY, bottomRightX, bottomRightY = self.shape:computeAABB( 0, 0, self.body:getAngle(), 1 )
 		love.graphics.rectangle("line", bodyWorldPos.x - math.abs(topLeftX), bodyWorldPos.y - math.abs(topLeftY), (bottomRightX - topLeftX), (bottomRightY - topLeftY))
 	end
-	
+
 end
