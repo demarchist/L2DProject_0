@@ -18,8 +18,8 @@ function Game:new()
 	love.physics.setMeter(1) --need to give some serious thought to proper scale
 	object.world = love.physics.newWorld(0,0,true)
 
-	table.insert(object.actors,Actor:new("Hero", object.world, 100, -100))
-	table.insert(object.actors,Actor:new("Monster", object.world, -50, 50))
+	table.insert(object.actors,Actor:new({name = "Hero", world = object.world, x = 100, y = -100}))
+	table.insert(object.actors,Actor:new({name = "Monster", world = object.world, x = -50, y = 50}))
 	
 	setmetatable(object, { __index = Game })  -- Inheritance
 
