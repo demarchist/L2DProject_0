@@ -99,7 +99,7 @@ end
 
 --[[
 -- ===  METHOD  ========================================================================
---    Signature:  Unit:primary_target ( ) -> table
+--    Signature:  Unit:primary_target ( ) -> table, number
 --  Description:  Obtain the unit's primary target.
 --      Returns:  Primary target (Unit object) and its affinity.
 -- =====================================================================================
@@ -149,15 +149,59 @@ end
 
 --[[
 -- ===  METHOD  ========================================================================
---    Signature:  Unit:update_targets ( ) -> nil
+--    Signature:  Unit:get_target_affinity ( unit ) -> number|bool
+--  Description:  Obtain the affinity value of this unit for one of its targets.
+--   Parameters:  unit : [table|string] : target unit identifier
+--      Returns:  Affinity value for the given target (or 'false' if this unit is
+--                unaware of it).
+-- =====================================================================================
+--]]
+function Unit:get_target_affinity ( unit )
+	unit = Unit.lookup(unit)
+
+	for i, target in ipairs(self.targets) do
+		if target.unit == unit then
+			return target.affinity
+		end
+	end
+
+	return false
+end
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Unit:set_target_affinity ( unit, number ) -> number|bool
+--  Description:  Set the affinity value of this unit for one of its targets.  Fails if
+--                the unit is not aware of the target.
+--   Parameters:  unit     : [table|string] : target unit identifier
+--                affinity : [number|func]  : target's new affinity value or a function
+--                                            to apply to its current affinity value
+--      Returns:  New affinity value for the given target (or 'false' if this unit is
+--                unaware of it).
+-- =====================================================================================
+--]]
+function Unit:set_target_affinity ( unit, affinity )
+	unit = Unit.lookup(unit)
+
+	for i, target in ipairs(self.targets) do
+		if target.unit == unit then
+			target.affinity = type(affinity) == 'function' and affinity(target.affinity) or affinity
+		end
+	end
+
+	return false
+end
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Unit:update_targets ( ) -> table, number
 --  Description:  Update the affinity values of the target and re-sort the target list.
 --      Returns:  Primary target and its affinity, after updating.
 -- =====================================================================================
 --]]
-function Unit:update_targets ( unit )
-	unit = Unit.lookup(unit)
-
-
+function Unit:update_targets ( )
 	for i, target in ipairs(self.targets) do
 		if self.affinity_func then
 			target.affinity = self.affinity_func(target.unit, target.affinity)
