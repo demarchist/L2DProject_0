@@ -18,15 +18,15 @@ local set_vector_operators  -- Defined at end.
 -- =====================================================================================
 --]]
 function Vector:new ( init )
-	init = init or {}
+	local vector = init or {}
 
-	init.x = init.x or 0
-	init.y = init.y or 0
+	vector.x = vector.x or 0
+	vector.y = vector.y or 0
 
-	Vector.super.new(self, init)
-	set_vector_operators(init)
+	Vector.super.new(self, vector)
+	set_vector_operators(vector)
 
-	return init
+	return vector
 end
 
 
