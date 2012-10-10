@@ -34,7 +34,7 @@ end
 
 --[[
 -- ===  METHOD  ========================================================================
---    Signature:  Zone:init ( [name, location] ) -> table
+--    Signature:  Zone:init ( [name] ) -> table
 --  Description:  Register a zone in the game environment.
 --   Parameters:      name : [string] : name of the zone
 --      Returns:  Self (Zone object).

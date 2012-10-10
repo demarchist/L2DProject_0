@@ -1,13 +1,13 @@
 -- Unit class.
 require'classes/Class'
---require'game.classes.Actor'
+require'classes/Actor'
 
 
 game.units = {}
 game.named_units = {}
 
 
-Unit = Class("Unit", nil, {
+Unit = Class("Unit", Actor, {
 	name          = "_unnamed_unit",  -- Unit names beginning with an underscore are not registered.
 	max_hp        = 100,
 	speed         = 1,
@@ -158,7 +158,7 @@ function Unit:update_targets ( unit )
 
 
 	for i, target in ipairs(self.targets) do
-		if (self.affinity_func) then
+		if self.affinity_func then
 			target.affinity = self.affinity_func(target.unit, target.affinity)
 		end
 	end
