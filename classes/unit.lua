@@ -10,6 +10,7 @@ game.named_units = {}
 Unit = Class("Unit", Actor, {
 	name          = "_unnamed_unit",  -- Unit names beginning with an underscore are not registered.
 	max_hp        = 100,
+	cur_hp        = 100,
 	speed         = 1,
 	damage        = 1,
 	range         = 1,
@@ -17,7 +18,7 @@ Unit = Class("Unit", Actor, {
 	zone          = nil,
 	loc           = { x = 0, y = 0 },
 	targets       = {},
-	affinity_func = nil,
+	affinity_func = function ( unit, old_affinity ) return old_affinity end,
 })
 
 
