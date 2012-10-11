@@ -1,6 +1,8 @@
 -- Unit class.
 require'classes/Class'
-require'classes/Actor'
+require'classes/Vector'
+require'classes/Zone'
+--require'classes/Actor'
 
 
 game.units = {}
@@ -8,17 +10,15 @@ game.named_units = {}
 
 
 Unit = Class("Unit", Actor, {
-	name          = "_unnamed_unit",  -- Unit names beginning with an underscore are not registered.
-	max_hp        = 100,
+	name          = "_unnamed_unit",   -- Unit names beginning with an underscore
+	max_hp        = 100,               --            are not globally registered.
 	cur_hp        = 100,
 	speed         = 1,
-	damage        = 1,
-	range         = 1,
+	sight         = 0,
 	faction       = nil,
 	zone          = nil,
-	loc           = { x = 0, y = 0 },
+	loc           = { x = 0, y = 0 },  -- Relative to 'zone'.
 	targets       = {},
-	affinity_func = function ( unit, old_affinity ) return old_affinity end,
 })
 
 
@@ -34,7 +34,9 @@ Unit = Class("Unit", Actor, {
 function Unit:new ( init )
 	local unit = init or {}
 
+
 	Unit.super.new(self, unit)
+
 
 	return unit:init()
 end
@@ -59,11 +61,22 @@ function Unit:init ( name, zone )
 	game.units[self] = name
 
 
-	-- Associate unit with a zone.
+	-- Associate the unit with a zone.
 	zone = zone or self.zone
 	if zone then
-		self:add_to_zone(zone)
+		self:set_zone(zone)
 	end
+
+
+	-- Create affinity table.
+	self.affinities = {}
+	self.affinity_func = self.affinity_func or function ( unit, old_affinity )
+		return old_affinity
+	end
+
+
+	-- Create a sight zone, if applicable.
+	self:set_sight(self.sight);
 
 
 	return self
@@ -99,15 +112,37 @@ end
 
 --[[
 -- ===  METHOD  ========================================================================
---    Signature:  Unit:primary_target ( ) -> table, number
---  Description:  Obtain the unit's primary target.
---      Returns:  Primary target (Unit object) and its affinity.
+--    Signature:  Unit:set_sight ( [radius] ) -> table|nil
+--  Description:  Set the unit's sight radius and create a Zone to represent it.
+--   Parameters:  radius : [number|nil] : new sight radius or nil to only create the
+--                                        zone using the unit's current radius
+--      Returns:  New sight zone (Zone object or nil).
+--         Note:  To remove the sight zone, pass a radius of zero.
 -- =====================================================================================
 --]]
-function Unit:primary_target ( )
-	return self.targets[1], affinity
+function Unit:set_sight ( radius )
+	radius = radius or self.sight or 0
+
+	if radius == 0 then
+		self.sight_zone = nil
+		return
+	end
+
+	self.sight = radius
+	self.sight_zone = Zone {
+		name   = "_" .. self.name .. "__sight_zone",
+		parent = self,
+		w      = 2 * radius,
+		h      = 2 * radius,
+	}
 end
 
+
+--[[
+====================================================================================
+  Target awareness.
+====================================================================================
+--]]
 
 --[[
 -- ===  METHOD  ========================================================================
@@ -119,13 +154,15 @@ end
 -- =====================================================================================
 --]]
 function Unit:add_target ( unit, affinity )
-	local target = {
-		unit = Unit.lookup(unit),
-		affinity = affinity or 0,
-	}
+	unit = Unit.lookup(unit)
 
-	table.insert(self.targets, target)
-	table.sort(self.targets, function ( a, b ) return a.affinity > b.affinity end)
+
+	if not self.affinities[unit] then
+		table.insert(self.targets, unit)
+	end
+
+
+	self.affinities[unit] = affinity or true
 end
 
 
@@ -139,11 +176,7 @@ end
 function Unit:remove_target ( unit )
 	unit = Unit.lookup(unit)
 
-	for i, target in ipairs(self.targets) do
-		if target.unit == unit then
-			table.remove(self.targets, i)
-		end
-	end
+	self.affinities[unit] = false  -- Pending removal of the target on next update_affinities().
 end
 
 
@@ -159,13 +192,7 @@ end
 function Unit:get_target_affinity ( unit )
 	unit = Unit.lookup(unit)
 
-	for i, target in ipairs(self.targets) do
-		if target.unit == unit then
-			return target.affinity
-		end
-	end
-
-	return false
+	return self.affinities[unit]
 end
 
 
@@ -184,35 +211,90 @@ end
 function Unit:set_target_affinity ( unit, affinity )
 	unit = Unit.lookup(unit)
 
-	for i, target in ipairs(self.targets) do
-		if target.unit == unit then
-			target.affinity = type(affinity) == 'function' and affinity(target.affinity) or affinity
-		end
+
+	if not self.affinities[unit] then
+		return false
 	end
 
-	return false
+
+	if type(affinity) == 'function' then
+		self.affinities[unit] = affinity(self.affinities[unit])
+	else
+		self.affinities[unit] = affinity
+	end
+
+
+	return self.affinities[unit]
 end
 
 
 --[[
 -- ===  METHOD  ========================================================================
---    Signature:  Unit:update_targets ( ) -> table, number
---  Description:  Update the affinity values of the target and re-sort the target list.
---      Returns:  Primary target and its affinity, after updating.
+--    Signature:  Unit:primary_target ( ) -> table, number
+--  Description:  Obtain the unit's primary target.
+--      Returns:  Primary target object and its affinity.
 -- =====================================================================================
 --]]
-function Unit:update_targets ( )
-	for i, target in ipairs(self.targets) do
-		if self.affinity_func then
-			target.affinity = self.affinity_func(target.unit, target.affinity)
+function Unit:primary_target ( )
+	return self.targets[1], self.affinities[self.targets[1]]
+end
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Unit:scan_visible ( ) -> nil
+--  Description:  Update the unit's sight zone and add new targets to its awareness.
+--         Note:  New targets are added with affinity value 'true', signifying awareness
+--                but no affinity.
+-- =====================================================================================
+--]]
+function Unit:scan_visible ( )
+	self.sight_zone:remove_all_units()
+
+	for unit, loc in pairs(self.zone.units) do
+		if Vector.mag{ x = self.loc.x - loc.x, y = self.loc.y - loc.y } <= self.sight then
+			if not self.affinities[unit] then self:add_target(unit) end
+
+			self.sight_zone:add_unit(unit)
+		end
+	end
+end
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Unit:update_affinities ( ) -> table, number
+--  Description:  Update the affinity values of the unit's targets and re-order the
+--                target list based on the new affinity values.
+--      Returns:  Primary target object and its affinity, after updating.
+-- =====================================================================================
+--]]
+function Unit:update_affinities ( )
+	while table.remove(self.targets) do end
+
+
+	for unit, affinity in pairs(self.affinities) do
+		if affinity == false then
+			self.affinities[unit] = nil  -- Final removal of a 'removed' target.
+
+		else
+			if self.affinity_func then
+				self.affinities[unit] = self.affinity_func(unit, self.affinities[unit])
+			end
+
+			table.insert(self.targets, unit)
 		end
 	end
 
 
-	table.sort(self.targets, function ( a, b ) return a.affinity > b.affinity end)
+	table.sort(self.targets, function ( a, b )
+		if type(b) ~= 'number' then return a end
+		if type(a) ~= 'number' then return b end
+		return self.affinities[a] > self.affinities[b]
+	end)
 
 
-	return self.targets[1], affinity
+	return self.targets[1], self.affinities[self.targets[1]]
 end
 
 

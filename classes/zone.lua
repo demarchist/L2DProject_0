@@ -7,9 +7,10 @@ game.named_zones = {}
 
 
 Zone = Class("Zone", nil, {
-	name       = "_unnamed_zone",  -- Zone names beginning with an underscore are not registered.
-	dimensions = { x = 100, y = 100 },
-	location   = { lon = 0, lat = 0 },
+	name       = "_unnamed_zone",       -- Zone names beginning with an underscore
+	parent     = nil,                   --            are not globally registered.
+	dimensions = { w = 100, h = 100 },
+	loc        = { x = 0, y = 0 },      -- Relative to parent.
 	units      = {},
 })
 
@@ -26,7 +27,9 @@ Zone = Class("Zone", nil, {
 function Zone:new ( init )
 	local zone = init or {}
 
+
 	Zone.super.new(self, zone)
+
 
 	return zone:init()
 end
@@ -79,20 +82,39 @@ end
 
 --[[
 -- ===  METHOD  ========================================================================
---    Signature:  Zone:remove_unit ( unit ) -> table
+--    Signature:  Zone:remove_unit ( unit ) -> table|nil
 --  Description:  Remove the specified unit from this zone.
 --   Parameters:  unit : [table|string] : unit identifier
---      Returns:  Resulting unit zone (i.e., 'nil').
+--      Returns:  Removed unit or 'nil' if zone is empty.
 -- =====================================================================================
 --]]
 function Zone:remove_unit ( unit )
 	unit = Unit.lookup(unit)
 
 
-	self.units[unit] = nil
+	if unit then
+		self.units[unit] = nil
+	end
 
 
-	return nil
+	return unit
+end
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Zone:remove_all_units ( ) -> table
+--  Description:  Remove all units from this zone.
+--      Returns:  Self (Zone object with no units).
+-- =====================================================================================
+--]]
+function Zone:remove_all_units ( )
+	for unit in pairs(self.units) do
+		self.units[unit] = nil
+	end
+
+
+	return self
 end
 
 
