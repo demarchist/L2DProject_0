@@ -10,15 +10,15 @@ game.named_units = {}
 
 
 Unit = Class("Unit", Actor, {
-	name          = "_unnamed_unit",   -- Unit names beginning with an underscore
-	max_hp        = 100,               --            are not globally registered.
-	cur_hp        = 100,
-	speed         = 1,
-	sight         = 0,
-	faction       = nil,
-	zone          = nil,
-	loc           = { x = 0, y = 0 },  -- Relative to 'zone'.
-	targets       = {},
+	name    = "_unnamed_unit",   -- Unit names beginning with an underscore
+	max_hp  = 100,               --            are not globally registered.
+	cur_hp  = 100,
+	speed   = 1,
+	sight   = 0,
+	faction = nil,
+	zone    = nil,
+	loc     = { x = 0, y = 0 },  -- Relative to 'zone'.
+	targets = {},
 })
 
 
@@ -54,6 +54,7 @@ end
 function Unit:init ( name, zone )
 	-- Register the unit in the game unit tables.
 	name = name or self.name
+
 	if name:byte() ~= string.byte('_') then
 		game.named_units[name] = self
 	end
@@ -132,8 +133,10 @@ function Unit:set_sight ( radius )
 	self.sight_zone = Zone {
 		name   = "_" .. self.name .. "__sight_zone",
 		parent = self,
-		w      = 2 * radius,
-		h      = 2 * radius,
+		size = {
+			w = 2 * radius,
+			h = 2 * radius,
+		},
 	}
 end
 

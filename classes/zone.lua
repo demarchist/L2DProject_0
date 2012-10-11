@@ -7,11 +7,11 @@ game.named_zones = {}
 
 
 Zone = Class("Zone", nil, {
-	name       = "_unnamed_zone",       -- Zone names beginning with an underscore
-	parent     = nil,                   --            are not globally registered.
-	dimensions = { w = 100, h = 100 },
-	loc        = { x = 0, y = 0 },      -- Relative to parent.
-	units      = {},
+	name   = "_unnamed_zone",       -- Zone names beginning with an underscore
+	parent = nil,                   --            are not globally registered.
+	size   = { w = 100, h = 100 },
+	loc    = { x = 0, y = 0 },      -- Relative to parent.
+	units  = {},
 })
 
 
@@ -46,7 +46,6 @@ end
 function Zone:init ( name )
 	-- Register the zone in the game zone tables.
 	name = name or self.name
-
 
 	if name:byte() ~= string.byte('_') then
 		game.named_zones[name] = self
