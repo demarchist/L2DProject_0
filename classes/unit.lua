@@ -2,7 +2,7 @@
 require'classes/Class'
 require'classes/Vector'
 require'classes/Zone'
---require'classes/Actor'
+require'classes/Actor'
 
 
 game.units = {}
@@ -70,13 +70,13 @@ function Unit:init ( name, zone )
 
 	-- Create affinity table.
 	self.affinities = {}
-	self.affinity_func = self.affinity_func or function ( unit, old_affinity )
+	self.affinity_func = self.affinity_func or function ( self, unit, old_affinity )
 		return old_affinity
 	end
 
 
 	-- Create a sight zone, if applicable.
-	self:set_sight(self.sight);
+	self:set_sight(self.sight)
 
 
 	return self
@@ -279,7 +279,7 @@ function Unit:update_affinities ( )
 
 		else
 			if self.affinity_func then
-				self.affinities[unit] = self.affinity_func(unit, self.affinities[unit])
+				self.affinities[unit] = self:affinity_func(unit, self.affinities[unit])
 			end
 
 			table.insert(self.targets, unit)
