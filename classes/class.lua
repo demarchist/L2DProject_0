@@ -1,6 +1,6 @@
 -- Root class of the object hierarchy.
 Object = {
-	name  = "Object",
+	_name = "Object",
 	class = nil,
 	super = nil,
 
@@ -10,19 +10,15 @@ Object = {
 	end,
 
 	is_a  = function ( self, class )
-		class = type(class) == 'table' and class.name or class
+		if not class or not self.class then return false end
 
-		local c = self.class
-		while c do
-			if c.name == class then
-				return true
-			end
-			c = c.super
-		end
-
-		return false
+		return self == class
+		    or self.class == class
+		    or self.class._name == class
+		    or self.class.super ~= nil and self.class.super:is_a(class)
 	end,
 }
+Object.class = Object
 
 
 -- Create a class registry in the game object.
@@ -49,7 +45,7 @@ function Class ( name, super, members )
 	super = super or Object
 	members = members or {}
 
-	members.name  = name or ''
+	members._name = name
 	members.class = members
 	members.super = super
 
