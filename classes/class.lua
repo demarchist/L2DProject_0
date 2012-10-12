@@ -53,8 +53,8 @@ function Class ( name, super, members )
 
 	return setmetatable(members, {
 		__index = super,
-		__call  = function ( self, init )
-			return self:new(init)
+		__call  = function ( self, init, ... )
+			return self:new(init, ...)
 		end
 	})
 end
