@@ -84,7 +84,12 @@ end
 -- =====================================================================================
 --]]
 set_vector_operators = function ( v )
-	mt = getmetatable(v)
+	local mt = getmetatable(v)
+
+
+	mt.__tostring = function ( v )
+		return "(x=" .. v.x .. ", y=" .. v.y .. ")"
+	end
 
 	mt.__eq = function ( v, w )
 		return v.x == w.x and v.y == w.y
