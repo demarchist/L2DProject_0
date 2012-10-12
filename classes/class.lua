@@ -12,10 +12,13 @@ Object = {
 	is_a  = function ( self, class )
 		if not class or not self.class then return false end
 
-		return self == class
-		    or self.class == class
-		    or self.class._name == class
-		    or self.class.super ~= nil and self.class.super:is_a(class)
+		if self == class or self.class == class or self.class._name == class then
+			return true
+		end
+
+		if not self.class.super then return false end
+
+		return self.class.super:is_a(class)
 	end,
 }
 Object.class = Object
