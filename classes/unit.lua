@@ -1,4 +1,3 @@
--- Unit class.
 require'classes/Class'
 require'classes/Vector'
 require'classes/Zone'
@@ -19,8 +18,16 @@ Unit = Class("Unit", Actor, {
 	zone    = nil,
 	loc     = { x = 0, y = 0 },  -- Relative to 'zone'.
 	targets = {},
+	status  = "",                -- Dynamically generated on field access.
 })
 
+
+
+--[[
+====================================================================================
+  Class utility.
+====================================================================================
+--]]
 
 --[[
 -- ===  CONSTRUCTOR  ===================================================================
@@ -80,9 +87,37 @@ function Unit:init ( name, zone )
 	self:set_sight(self.sight)
 
 
+	-- Allow state to be dynamically queried as a table field.
+	self.status = { unit = self }
+	setmetatable(self.status, {
+		__tostring = function( status ) return status.unit:get_status() end,
+	})
+
+
 	return self
 end
 
+
+--[[
+-- ===  CLASS FUNCTION  ================================================================
+--    Signature:  Unit.lookup ( unit ) -> table
+--  Description:  Find a unit object by name or table address.
+--   Parameters:  unit : [table|string] : unit identifier
+--      Returns:  Matching unit object or 'nil' if not found.
+-- =====================================================================================
+--]]
+function Unit.lookup ( unit )
+	return type(unit) == 'table' and game.units[unit] and unit
+	    or type(unit) == 'string' and game.named_units[unit]
+	    or nil
+end
+
+
+--[[
+====================================================================================
+  Internal properties.
+====================================================================================
+--]]
 
 --[[
 -- ===  METHOD  ========================================================================
@@ -139,6 +174,21 @@ function Unit:set_sight ( radius )
 		},
 	}
 end
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Unit:get_status ( ) -> string
+--  Description:  Obtain the unit's current status.
+--      Returns:  Current status string.
+--         Note:  The Unit.status field uses this to set its value on access,
+--                so there is generally no need to call this function directly.
+-- =====================================================================================
+--]]
+function Unit:get_status ( )
+	return self.cur_hp <= 0 and 'dead' or 'normal'
+end
+
 
 
 --[[
@@ -302,15 +352,18 @@ end
 
 
 --[[
--- ===  CLASS FUNCTION  ================================================================
---    Signature:  Unit.lookup ( unit ) -> table
---  Description:  Find a unit object by name or table address.
---   Parameters:  unit : [table|string] : unit identifier
---      Returns:  Matching unit object or 'nil' if not found.
+====================================================================================
+  Received effects.
+====================================================================================
+--]]
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Unit:damage ( value ) -> nil
+--  Description:  Reduce this unit's hitpoints by the specified amount.
+--   Parameters:  value : [number] : base damage to incur
 -- =====================================================================================
 --]]
-function Unit.lookup ( unit )
-	return type(unit) == 'table' and game.units[unit] and unit
-	    or type(unit) == 'string' and game.named_units[unit]
-	    or nil
+function Unit:damage ( value )
+	self.cur_hp = self.cur_hp - value
 end

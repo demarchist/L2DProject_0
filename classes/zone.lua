@@ -1,4 +1,3 @@
--- Zone class
 require'classes/Class'
 
 
