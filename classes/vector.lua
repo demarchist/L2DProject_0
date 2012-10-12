@@ -23,12 +23,13 @@ local set_vector_operators  -- Defined at end.
 function Vector:new ( init_or_x, y )
 	local vector = type(init_or_x) == 'table' and init_or_x or {}
 
-	print(init_or_x, y)
+
 	vector.x = type(init_or_x) == 'number' and init_or_x or vector.x or 0
 	vector.y = type(init_or_x) == 'number' and y or vector.y or 0
 
 	Vector.super.new(self, vector)
 	set_vector_operators(vector)
+
 
 	return vector
 end
