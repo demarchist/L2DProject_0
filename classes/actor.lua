@@ -12,7 +12,7 @@ function Actor:new ( init )
 
 	actor.name = actor.name or 0
 	actor.world = actor.world or 0
-	actor.objPoint = nil
+	actor.objPoint = Vector:new({x = actor.x, y = actor.y})
 	actor.selected = false
 
 	actor.body = love.physics.newBody(actor.world, actor.x, actor.y, 'dynamic')
@@ -24,6 +24,8 @@ function Actor:new ( init )
 	actor.body:setAngle(0) --Radians
 	actor.objTheta = 0 --Radians
 	actor.nametagFont = love.graphics.newFont(10) -- the number denotes the font size
+
+	actor.maxAccel = 20 --Meters per second per second
 
 	Actor.super.new(self, actor)
 
@@ -73,13 +75,25 @@ function Actor:update()
 				self.body:setAngle(self.body:getAngle() + self.objTheta)
 
 				--I'll need to limit maximum linear velocity.
-				self.body:applyLinearImpulse(0.1 * vectorToObj:unit().x, 0.1 * vectorToObj:unit().y)
+				local linVelX, linVelY = self.body:getLinearVelocity()
+				local linVel = Vector:new({x = linVelX, y = linVelY}) --body local
+
+				local forceVector = nil
+				if(linVel:mag() == 0) then
+					forceVector = Vector(vectorToObj:unit())
+				else
+					forceVector = Vector(Vector(vectorToObj:unit()) - Vector(linVel:unit()))
+				end
+
+				forceVector = forceVector * self.maxAccel
+
+				self.body:applyLinearImpulse(forceVector.x, forceVector.y)
+				--self.body:applyForce( forceVector.x, forceVector.y )
 			end
 		else
-			--This is where I need to properly apply force to counter the linear velocity.
-			--For now I'll cheat
-			self.body:setLinearVelocity(0,0) --comment this out for rubberband funtimes
-			self.objPoint = nil
+			self.body:setLinearVelocity(0,0) --Put the brakes on manually
+			self.body:setAngularVelocity(0)
+			--self.objPoint = nil
 		end
 	end
 end

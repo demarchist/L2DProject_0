@@ -179,7 +179,7 @@ function Camera:render()
 				local AABBtopLeftX, AABBtopLeftY, AABBbottomRightX, AABBbottomRightY = lShape:computeAABB( 0, 0, lBody:getAngle(), 1 )
 
 				--NameTag
-				love.graphics.setColor(153,153,255)
+				love.graphics.setColor(153,153,255) --Periwinkle
 				love.graphics.setFont(lActor.nametagFont)
 				love.graphics.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2), bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),0,1,1,0,0,0,0)
 
@@ -195,7 +195,7 @@ function Camera:render()
 					if(lActor.objPoint ~= nil) then
 						local lActorObjective = self:worldPosToCameraPos(lActor.objPoint.x, lActor.objPoint.y)
 						--Line to objPoint
-						love.graphics.setColor(255,192,203)
+						love.graphics.setColor(255,192,203) --Pink
 						love.graphics.line(bodyCamPos.x, bodyCamPos.y, lActorObjective.x, lActorObjective.y)
 
 						--Direction to objPoint indicator
