@@ -16,7 +16,7 @@ function Actor:new ( init )
 	init.selected = false
 
 	init.body = love.physics.newBody(init.world, init.x, init.y, "dynamic")
-	init.shape = love.physics.newCircleShape(10)
+	init.shape = love.physics.newCircleShape(1)
 	init.fixture = love.physics.newFixture(init.body, init.shape, 1)
 	init.fixture:setUserData(init)
 	init.fixture:setRestitution(0.9) --Unitless
@@ -53,8 +53,8 @@ end
 
 function Actor:update()
 	if(self.objPoint ~= nil) then
-		if((math.abs(self.body:getX() - self.objPoint.x) > 5) or
-		   (math.abs(self.body:getY() - self.objPoint.y) > 5)) then
+		if((math.abs(self.body:getX() - self.objPoint.x) > 1) or
+		   (math.abs(self.body:getY() - self.objPoint.y) > 1)) then
 		   	local bodyVector = Vector:new({x = self.body:getX(), y = self.body:getY()})
 			local vectorToObj = self.objPoint - bodyVector
 			local directionUnitVector = {x = math.cos(self.body:getAngle()), y = math.sin(self.body:getAngle())}
@@ -63,7 +63,7 @@ function Actor:update()
 						   directionUnitVector.x * vectorToObj:unit().x + directionUnitVector.y * vectorToObj:unit().y)
 
 			if(math.abs(self.objTheta) > math.pi / 20) then
-				self.body:applyAngularImpulse(50 * (self.objTheta / math.abs(self.objTheta)))
+				self.body:applyAngularImpulse(0.1 * (self.objTheta / math.abs(self.objTheta)))
 				--Need to limit maximum angular velocity!
 			else
 				--I should really use torque to zero-out the angular velocity
@@ -73,7 +73,7 @@ function Actor:update()
 				self.body:setAngle(self.body:getAngle() + self.objTheta)
 	
 				--I'll need to limit maximum linear velocity.
-				self.body:applyLinearImpulse(vectorToObj:unit().x, vectorToObj:unit().y)
+				self.body:applyLinearImpulse(0.1 * vectorToObj:unit().x, 0.1 * vectorToObj:unit().y)
 			end
 		else
 			--This is where I need to properly apply force to counter the linear velocity.

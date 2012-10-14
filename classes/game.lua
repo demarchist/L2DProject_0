@@ -6,19 +6,19 @@ Game = {}
 
 function Game:new()
 	require('classes.actor')
-	humpCamera = require('libraries.hump.camera')
+	require('classes.camera')
 
 	local object = {
 		actors = {}
 	}
 
-	object.cam = humpCamera(0,0,1,0)
-	object.selectBox = {0,0,0,0,0}
-
-	love.physics.setMeter(1) --need to give some serious thought to proper scale
+	love.physics.setMeter(1) --This may be the default value
 	object.world = love.physics.newWorld(0,0,true)
 
-	table.insert(object.actors,Actor:new({name = "Hero", world = object.world, x = 100, y = -100}))
+	object.cam = Camera:new({world = object.world, pxPerUnit = 10})
+	object.cam:setTargetCoordinates(80,80)
+
+	table.insert(object.actors,Actor:new({name = "Hero", world = object.world, x = 100, y = 100}))
 	table.insert(object.actors,Actor:new({name = "Monster", world = object.world, x = -50, y = 50}))
 	
 	setmetatable(object, { __index = Game })  -- Inheritance
@@ -29,82 +29,40 @@ end
 function Game:update(dt)
 	self.world:update(dt)
 
-	for i = 1, # self.actors do
-		self.actors[i]:update()
+	for k, lActor in pairs(self.actors) do
+		lActor:update()
 	end
 
-	if(self.selectBox[1] == 1) then
-		if love.graphics.hasFocus() then
-			self.selectBox[4] = love.mouse.getX()
-			self.selectBox[5] = love.mouse.getY()
-		end
-	end
+	self.cam:update(dt)
 end
 
 function Game:drawWorld()
-	self.cam:attach()
-	for i = 1, # self.actors do
-		self.actors[i]:draw()
-	end
-	self.cam:detach()
-
-	-- draw a selection box
-	love.graphics.setColor(255,255,255)
-	if(self.selectBox[1] == 1) then
-		love.graphics.rectangle("line", self.selectBox[2], self.selectBox[3], self.selectBox[4]  - self.selectBox[2], self.selectBox[5] - self.selectBox[3])
-	end
-
-	--[[
-	local topLeftX, topLeftY = self.cam:worldCoords(self.selectBox[2], self.selectBox[3])
-	local bottomRightX, bottomRightY = self.cam:worldCoords(self.selectBox[4], self.selectBox[5])
-	local debugText = "[" .. tostring(self.selectBox[1]) .. ", " .. tostring(topLeftX) .. ", " .. tostring(topLeftY) .. ", " .. tostring(bottomRightX) .. ", " .. tostring(bottomRightY) .. "]"
-	love.graphics.print(debugText, (love.graphics.getWidth() / 2), love.graphics.getHeight() - 100,0,1,1,0,0,0,0)
-	]]
-	
+	self.cam:render()
 end
 
 function Game:mousepressed(x, y, button)
-	if(button == "l") then
-		self.selectBox[1] = 1
-		self.selectBox[2] = x
-		self.selectBox[3] = y
-	end
+	self.cam:mousepressed(x, y, button)
 end
 
 function Game:mousereleased(x, y, button)
-	if(button == "l") then
-		self.selectBox[1] = 0
-		self.selectBox[4] = x
-		self.selectBox[5] = y
+	self.cam:mousereleased(x, y, button)
+end
 
-		for i = 1, # self.actors do
-			self.actors[i]:setSelected(false)
-		end
-
-		local topLeftX, topLeftY = self.cam:worldCoords(math.min(self.selectBox[2], self.selectBox[4]), math.min(self.selectBox[3],self.selectBox[5]))
-		local bottomRightX, bottomRightY = self.cam:worldCoords(math.max(self.selectBox[2], self.selectBox[4]), math.max(self.selectBox[3],self.selectBox[5]))
-
-		self.world:queryBoundingBox(topLeftX, topLeftY, bottomRightX, bottomRightY, self.bbQueryCallback)
-	elseif(button == "r") then
-		for i = 1, # self.actors do
-			if(self.actors[i]:getSelected() == true) then
-				local worldX, worldY = self.cam:worldCoords(x, y)
-				self.actors[i]:setObjective(worldX, worldY)
-			end
-		end
+function Game:keypressed(key, unicode)
+	if(key == 'b') then
+	elseif key == 'a' then
+	elseif key == 'up' then
+		self.cam:setTargetCoordinates(self.cam.targetCoordinates.x, self.cam.targetCoordinates.y + 10)
+	elseif key == 'down' then
+		self.cam:setTargetCoordinates(self.cam.targetCoordinates.x, self.cam.targetCoordinates.y - 10)
+	elseif key == 'left' then
+		self.cam:setTargetCoordinates(self.cam.targetCoordinates.x - 10, self.cam.targetCoordinates.y)
+	elseif key == 'right' then
+		self.cam:setTargetCoordinates(self.cam.targetCoordinates.x + 10, self.cam.targetCoordinates.y)
+	elseif key == 'escape' then
+		love.event.push("quit")   -- actually causes the app to quit
 	end
 end
 
-function Game.bbQueryCallback(lFixture)
-	if lFixture ~= nil then
-		--print(lFixture, ' - ', type(lFixture))
-		local lActor = lFixture:getUserData()
-		if lActor ~= nil then
-			--print(lActor, ' - ', type(lActor))
-			--print(lActor.selected)
-			lActor:setSelected(true)
-			--print(lActor.selected)
-		end
-	end
-	return(true)
+function Game:keyreleased(key, unicode)
 end

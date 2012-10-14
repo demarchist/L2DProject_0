@@ -17,13 +17,6 @@ end
 
 function love.draw()
 
-	--A cross-hair thing
-	love.graphics.setColor(210,180,140)
-	local center_x = (love.graphics.getWidth() / 2)
-	local center_y = (love.graphics.getHeight() / 2)
-	love.graphics.line(center_x - 10, center_y, center_x + 10, center_y)
-	love.graphics.line(center_x, center_y - 10, center_x, center_y + 10)
-
 	game:drawWorld()
 
 	loveframes.draw()
@@ -45,21 +38,15 @@ end
 function love.keypressed(key, unicode)
 	-- https://love2d.org/wiki/KeyConstant
 	loveframes.keypressed(key, unicode)
-
-	if(key == 'b') then
-		-- b was pressed
-	elseif key == 'a' then
-		-- a was pressed
-	end
+	game:keypressed(key, unicode)
 end
 
 function love.keyreleased(key, unicode)
 	loveframes.keyreleased(key)
+	game:keyreleased(key, unicode)
 end
 
 function love.focus(f)
-	love.graphics.setFont(love.graphics.newFont(24))
-	love.graphics.setColor(210,180,140)
 	if(not f) then
 		--Lost Focus
 	else
