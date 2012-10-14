@@ -16,7 +16,7 @@ function Actor:new ( init )
 	actor.selected = false
 
 	actor.body = love.physics.newBody(actor.world, actor.x, actor.y, 'dynamic')
-	actor.shape = love.physics.newCircleShape(10)
+	actor.shape = love.physics.newCircleShape(1)
 	actor.fixture = love.physics.newFixture(actor.body, actor.shape, 1)
 	actor.fixture:setUserData(actor)
 	actor.fixture:setRestitution(0.9) --Unitless
