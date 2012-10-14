@@ -9,24 +9,29 @@ local set_vector_operators  -- Defined at end.
 
 --[[
 -- ===  CONSTRUCTOR  ===================================================================
---    Signature:  Vector:new ( [init] ) -> table
+--    Signature:  Vector:new ( [init_or_x, y] ) -> table
 --  Description:  Instantiate a vector object.
---   Parameters:  init : [table] : object containing initial parameters
---                     - x : [number] : horizontal component of the new vector
---                     - y : [number] : vertical component of the new vector
+--   Parameters:  init_or_x : [table|number] : object containing initial parameters or a
+--                                             value for the horizontal vector component
+--                        y : [number]       : vertical component of the new vector
 --      Returns:  New Vector object table (in 'init', if provided).
+--         Note:  If 'init_or_x' is an initial parameter table, the parameters must be
+--                indexed at 'x' and 'y'.  The second arg is only considered when the
+--                first is a number.
 -- =====================================================================================
 --]]
-function Vector:new ( init )
-	init = init or {}
+function Vector:new ( init_or_x, y )
+	local vector = type(init_or_x) == 'table' and init_or_x or {}
 
-	init.x = init.x or 0
-	init.y = init.y or 0
 
-	Vector.super.new(self, init)
-	set_vector_operators(init)
+	vector.x = type(init_or_x) == 'number' and init_or_x or vector.x or 0
+	vector.y = type(init_or_x) == 'number' and y or vector.y or 0
 
-	return init
+	Vector.super.new(self, vector)
+	set_vector_operators(vector)
+
+
+	return vector
 end
 
 
@@ -84,7 +89,12 @@ end
 -- =====================================================================================
 --]]
 set_vector_operators = function ( v )
-	mt = getmetatable(v)
+	local mt = getmetatable(v)
+
+
+	mt.__tostring = function ( v )
+		return "(x=" .. v.x .. ", y=" .. v.y .. ")"
+	end
 
 	mt.__eq = function ( v, w )
 		return v.x == w.x and v.y == w.y
