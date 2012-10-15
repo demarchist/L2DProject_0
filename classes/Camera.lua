@@ -183,14 +183,6 @@ function Camera:render()
 				love.graphics.setFont(lActor.nametagFont)
 				love.graphics.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2), bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),0,1,1,0,0,0,0)
 
-				--Velocity Vector
-				love.graphics.setColor(113, 188, 120) --Fern Green
-				local linVelX, linVelY = lBody:getLinearVelocity()
-				local linVel = Vector:new({x = linVelX, y = -linVelY})
-				linVel = linVel + bodyCamPos
-				love.graphics.line(bodyCamPos.x, bodyCamPos.y, linVel.x, linVel.y)
-				--Maybe a nice little arrowhead?
-
 				if(lShape:getType() == 'circle') then
 					if(lActor.objPoint ~= nil) then
 						local lActorObjective = self:worldPosToCameraPos(lActor.objPoint.x, lActor.objPoint.y)
@@ -209,6 +201,20 @@ function Camera:render()
 				elseif(lShape:getType() == 'polygon') then
 					--Have to add the ability to draw polygon shapes here!
 				end
+
+				--Velocity Vector
+				love.graphics.setColor(113, 188, 120) --Fern Green
+				local linVelX, linVelY = lBody:getLinearVelocity()
+				local linVel = Vector:new({x = linVelX, y = -linVelY})
+				linVel = (linVel * self.pxPerUnit) + bodyCamPos
+				love.graphics.line(bodyCamPos.x, bodyCamPos.y, linVel.x, linVel.y)
+				--Maybe a nice little arrowhead?
+
+				--Force Vector
+				love.graphics.setColor(206, 32, 41) --Fire Engine Red
+				local lForceVector = Vector:new({x = lActor.forceVector.x, y = -lActor.forceVector.y})
+				lForceVector = (lForceVector * self.pxPerUnit) + bodyCamPos
+				love.graphics.line(bodyCamPos.x, bodyCamPos.y, lForceVector.x, lForceVector.y)
 
 				--Selection Box
 				if(lActor.selected == true) then

@@ -20,12 +20,15 @@ function Actor:new ( init )
 	actor.fixture = love.physics.newFixture(actor.body, actor.shape, 1)
 	actor.fixture:setUserData(actor)
 	actor.fixture:setRestitution(0.9) --Unitless
+	actor.fixture:setDensity(25.5) --Kilograms per square meter
 	actor.body:isFixedRotation(false)
 	actor.body:setAngle(0) --Radians
 	actor.objTheta = 0 --Radians
+	actor.forceVector = Vector:new({x = 0, y = 0})
 	actor.nametagFont = love.graphics.newFont(10) -- the number denotes the font size
 
-	actor.maxAccel = 20 --Meters per second per second
+	actor.maxAccel = 2 --20 --Meters per second per second
+	actor.maxVel = 3 --Meters per second
 
 	Actor.super.new(self, actor)
 
@@ -78,19 +81,30 @@ function Actor:update()
 				local linVelX, linVelY = self.body:getLinearVelocity()
 				local linVel = Vector:new({x = linVelX, y = linVelY}) --body local
 
-				local forceVector = nil
+				--local forceVector = nil
 				if(linVel:mag() == 0) then
-					forceVector = Vector(vectorToObj:unit())
+					self.forceVector = Vector(vectorToObj:unit())
 				else
-					forceVector = Vector(Vector(vectorToObj:unit()) - Vector(linVel:unit()))
+					self.forceVector = Vector(Vector(vectorToObj:unit()) - Vector(linVel:unit()))
 				end
 
-				forceVector = forceVector * self.maxAccel
+				self.forceVector = Vector((Vector(vectorToObj:unit()) + Vector(self.forceVector:unit())):unit()) * self.maxAccel
 
-				self.body:applyLinearImpulse(forceVector.x, forceVector.y)
-				--self.body:applyForce( forceVector.x, forceVector.y )
+				--this is an "authentic" force-based way of doing it.
+				--[[if(linVel:mag() >= self.maxVel) then
+					--force Vector plus the scalar projection of the force vector on to the velocity vector
+					self.forceVector = self.forceVector - ((Vector(linVel:unit()) * self.forceVector:dot(linVel)) / linVel:mag())
+				end]]
+
+				self.body:applyForce( self.forceVector.x, self.forceVector.y )
+
+				--But doing this might actually be better because applying an impulse overwrites existing forces
+				--self.forceVector = self.forceVector * self.maxAccel
+				--self.body:applyLinearImpulse(self.forceVector.x, self.forceVector.y)
 			end
 		else
+			self.forceVector.x = 0
+			self.forceVector.y = 0
 			self.body:setLinearVelocity(0,0) --Put the brakes on manually
 			self.body:setAngularVelocity(0)
 			--self.objPoint = nil
