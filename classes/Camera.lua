@@ -171,7 +171,7 @@ function Camera:render()
 		if(lFixture ~= nil) then
 			local lShape = lFixture:getShape()
 			local lBody = lFixture:getBody()
-			
+
 			if((lShape ~= nil) and (lBody ~= nil)) then
 				local bodyAngle = lBody:getAngle()
 				local bodyCamPos = self:worldPosToCameraPos(lBody:getX(), lBody:getY())
@@ -193,44 +193,16 @@ function Camera:render()
 					love.graphics.setLine(2, 'smooth')
 					love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
 				elseif(lShape:getType() == 'chain') then
-
-					--This makes me want to kill myself.
-					local lChainPoints = {lShape:getPoints()}
 					love.graphics.setColor(169,169,169) -- Dark Gray
 					love.graphics.setLine(4, 'smooth')
-					local pointOneCamPos = nil
-					local pointTwoCamPos = nil
-					for i = 4,#lChainPoints,4 do
-						--print("(" .. lChainPoints[i-3] .. ", " .. lChainPoints[i-2] .. ") (" .. lChainPoints[i-1] .. ", " .. lChainPoints[i] .. ")")	
-						pointOneCamPos = self:worldPosToCameraPos(lChainPoints[i-3], lChainPoints[i-2])
-						if(pointTwoCamPos ~= nil) then
-							love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
-						end
-						pointTwoCamPos = self:worldPosToCameraPos(lChainPoints[i-1], lChainPoints[i])
-						love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
-					end
+					local a = self:worldPosToCameraPos(lShape:getPoint(1))
+					for i = 2, lShape:getVertexCount() do
+						local b = self:worldPosToCameraPos(lShape:getPoint(i))
 
-					--Why doesn't this work?!
-					--[[
-					print(lShape:getType())
-					local childCount = lShape:getChildCount()
-					print("childCount: " .. childCount)
-					for i = 1, childCount do
-						print("\t" .. i)
-						local lEdgeShape = lShape:getChildEdge(i)
+						love.graphics.line(a.x, a.y, b.x, b.y)
 
-						if(lEdgeShape ~= nil) then
-							if(lEdgeShape:getType() == 'edge') then
-								local x1, y1, x2, y2 = lEdgeShape:getPoints()
-								local pointOneCamPos = self:worldPosToCameraPos(x1, y1)
-								local pointTwoCamPos = self:worldPosToCameraPos(x2, y2)
-								love.graphics.setColor(169,169,169) -- Dark Gray
-								love.graphics.setLine(4, 'smooth')
-								love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
-							end
-						end
+						a = b
 					end
-					]]
 				end
 
 				local lActor = lFixture:getUserData()
@@ -247,8 +219,8 @@ function Camera:render()
 					love.graphics.setColor(153,153,255) --Periwinkle
 					love.graphics.setFont(lActor.nametagFont)
 					love.graphics.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2),
-									 bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),
-									 0,1,1,0,0,0,0)
+					                                 bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),
+					                                 0,1,1,0,0,0,0)
 
 					if(lActor.objPoint ~= nil) then
 						local lActorObjective = self:worldPosToCameraPos(lActor.objPoint.x, lActor.objPoint.y)
@@ -263,8 +235,8 @@ function Camera:render()
 							love.graphics.setColor(128,0,0) --Maroon
 							love.graphics.setLine(1, 'smooth')
 							love.graphics.line(bodyCamPos.x, bodyCamPos.y,
-									   bodyCamPos.x + (shapeRadius * math.cos(bodyAngle + lActor.objTheta)),
-									   bodyCamPos.y - (shapeRadius * math.sin(bodyAngle + lActor.objTheta)))
+							                   bodyCamPos.x + (shapeRadius * math.cos(bodyAngle + lActor.objTheta)),
+							                   bodyCamPos.y - (shapeRadius * math.sin(bodyAngle + lActor.objTheta)))
 						end
 					end
 
@@ -272,9 +244,9 @@ function Camera:render()
 					if(lActor.selected == true) then
 						love.graphics.setColor(255,255,255)
 						love.graphics.rectangle("line", bodyCamPos.x - (math.abs(AABBtopLeftX) * self.pxPerUnit),
-										bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit),
-										(AABBbottomRightX - AABBtopLeftX) * self.pxPerUnit,
-										(AABBbottomRightY - AABBtopLeftY) * self.pxPerUnit)
+						                                bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit),
+						                                (AABBbottomRightX - AABBtopLeftX) * self.pxPerUnit,
+						                                (AABBbottomRightY - AABBtopLeftY) * self.pxPerUnit)
 					end
 				end
 
