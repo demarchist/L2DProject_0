@@ -171,55 +171,122 @@ function Camera:render()
 		if(lFixture ~= nil) then
 			local lShape = lFixture:getShape()
 			local lBody = lFixture:getBody()
-			local lActor = lFixture:getUserData()
-			if((lShape ~= nil) and (lBody ~= nil) and (lActor ~= nil)) then
-				local shapeRadius = lShape:getRadius() * self.pxPerUnit
+			
+			if((lShape ~= nil) and (lBody ~= nil)) then
 				local bodyAngle = lBody:getAngle()
 				local bodyCamPos = self:worldPosToCameraPos(lBody:getX(), lBody:getY())
-				local AABBtopLeftX, AABBtopLeftY, AABBbottomRightX, AABBbottomRightY = lShape:computeAABB( 0, 0, lBody:getAngle(), 1 )
-
-				--NameTag
-				love.graphics.setColor(153,153,255) --Periwinkle
-				love.graphics.setFont(lActor.nametagFont)
-				love.graphics.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2), bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),0,1,1,0,0,0,0)
 
 				if(lShape:getType() == 'circle') then
-					if(lActor.objPoint ~= nil) then
-						local lActorObjective = self:worldPosToCameraPos(lActor.objPoint.x, lActor.objPoint.y)
-						--Line to objPoint
-						love.graphics.setColor(255,192,203) --Pink
-						love.graphics.line(bodyCamPos.x, bodyCamPos.y, lActorObjective.x, lActorObjective.y)
-
-						--Direction to objPoint indicator
-						love.graphics.setColor(128,0,0)
-						love.graphics.line(bodyCamPos.x, bodyCamPos.y, bodyCamPos.x + (shapeRadius * math.cos(bodyAngle + lActor.objTheta)), bodyCamPos.y - (shapeRadius * math.sin(bodyAngle + lActor.objTheta)))
-					end
+					local shapeRadius = lShape:getRadius() * self.pxPerUnit
 
 					love.graphics.setColor(210,180,140)
+					love.graphics.setLine(2, 'smooth')
 					love.graphics.circle("line", bodyCamPos.x, bodyCamPos.y, shapeRadius, 50)
 					love.graphics.line(bodyCamPos.x, bodyCamPos.y, (bodyCamPos.x + (shapeRadius * math.cos(bodyAngle))), (bodyCamPos.y - (shapeRadius * math.sin(bodyAngle))))
 				elseif(lShape:getType() == 'polygon') then
 					--Have to add the ability to draw polygon shapes here!
+				elseif(lShape:getType() == 'edge') then
+					local x1, y1, x2, y2 = lShape:getPoints()
+					local pointOneCamPos = self:worldPosToCameraPos(x1, y1)
+					local pointTwoCamPos = self:worldPosToCameraPos(x2, y2)
+					love.graphics.setColor(169,169,169) -- Dark Gray
+					love.graphics.setLine(2, 'smooth')
+					love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
+				elseif(lShape:getType() == 'chain') then
+
+					--This makes me want to kill myself.
+					local lChainPoints = {lShape:getPoints()}
+					love.graphics.setColor(169,169,169) -- Dark Gray
+					love.graphics.setLine(4, 'smooth')
+					local pointOneCamPos = nil
+					local pointTwoCamPos = nil
+					for i = 4,#lChainPoints,4 do
+						--print("(" .. lChainPoints[i-3] .. ", " .. lChainPoints[i-2] .. ") (" .. lChainPoints[i-1] .. ", " .. lChainPoints[i] .. ")")	
+						pointOneCamPos = self:worldPosToCameraPos(lChainPoints[i-3], lChainPoints[i-2])
+						if(pointTwoCamPos ~= nil) then
+							love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
+						end
+						pointTwoCamPos = self:worldPosToCameraPos(lChainPoints[i-1], lChainPoints[i])
+						love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
+					end
+
+					--Why doesn't this work?!
+					--[[
+					print(lShape:getType())
+					local childCount = lShape:getChildCount()
+					print("childCount: " .. childCount)
+					for i = 1, childCount do
+						print("\t" .. i)
+						local lEdgeShape = lShape:getChildEdge(i)
+
+						if(lEdgeShape ~= nil) then
+							if(lEdgeShape:getType() == 'edge') then
+								local x1, y1, x2, y2 = lEdgeShape:getPoints()
+								local pointOneCamPos = self:worldPosToCameraPos(x1, y1)
+								local pointTwoCamPos = self:worldPosToCameraPos(x2, y2)
+								love.graphics.setColor(169,169,169) -- Dark Gray
+								love.graphics.setLine(4, 'smooth')
+								love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
+							end
+						end
+					end
+					]]
+				end
+
+				local lActor = lFixture:getUserData()
+				if(lActor ~= nil) then
+					--Force Vector
+					love.graphics.setColor(206, 32, 41) --Fire Engine Red
+					local lForceVector = Vector:new({x = lActor.forceVector.x, y = -lActor.forceVector.y})
+					lForceVector = (lForceVector * self.pxPerUnit) + bodyCamPos
+					love.graphics.setLine(1, 'smooth')
+					love.graphics.line(bodyCamPos.x, bodyCamPos.y, lForceVector.x, lForceVector.y)
+
+					--NameTag
+					local AABBtopLeftX, AABBtopLeftY, AABBbottomRightX, AABBbottomRightY = lShape:computeAABB( 0, 0, bodyAngle, 1 )
+					love.graphics.setColor(153,153,255) --Periwinkle
+					love.graphics.setFont(lActor.nametagFont)
+					love.graphics.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2),
+									 bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),
+									 0,1,1,0,0,0,0)
+
+					if(lActor.objPoint ~= nil) then
+						local lActorObjective = self:worldPosToCameraPos(lActor.objPoint.x, lActor.objPoint.y)
+						--Line to objPoint
+						love.graphics.setColor(255,192,203) --Pink
+						love.graphics.setLine(2, 'smooth')
+						love.graphics.line(bodyCamPos.x, bodyCamPos.y, lActorObjective.x, lActorObjective.y)
+
+						--Direction to objPoint indicator
+						if(lShape:getType() == 'circle') then
+							local shapeRadius = lShape:getRadius() * self.pxPerUnit
+							love.graphics.setColor(128,0,0) --Maroon
+							love.graphics.setLine(1, 'smooth')
+							love.graphics.line(bodyCamPos.x, bodyCamPos.y,
+									   bodyCamPos.x + (shapeRadius * math.cos(bodyAngle + lActor.objTheta)),
+									   bodyCamPos.y - (shapeRadius * math.sin(bodyAngle + lActor.objTheta)))
+						end
+					end
+
+					--Selection Box
+					if(lActor.selected == true) then
+						love.graphics.setColor(255,255,255)
+						love.graphics.rectangle("line", bodyCamPos.x - (math.abs(AABBtopLeftX) * self.pxPerUnit),
+										bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit),
+										(AABBbottomRightX - AABBtopLeftX) * self.pxPerUnit,
+										(AABBbottomRightY - AABBtopLeftY) * self.pxPerUnit)
+					end
 				end
 
 				--Velocity Vector
-				love.graphics.setColor(113, 188, 120) --Fern Green
 				local linVelX, linVelY = lBody:getLinearVelocity()
-				local linVel = Vector:new({x = linVelX, y = -linVelY})
-				linVel = (linVel * self.pxPerUnit) + bodyCamPos
-				love.graphics.line(bodyCamPos.x, bodyCamPos.y, linVel.x, linVel.y)
-				--Maybe a nice little arrowhead?
-
-				--Force Vector
-				love.graphics.setColor(206, 32, 41) --Fire Engine Red
-				local lForceVector = Vector:new({x = lActor.forceVector.x, y = -lActor.forceVector.y})
-				lForceVector = (lForceVector * self.pxPerUnit) + bodyCamPos
-				love.graphics.line(bodyCamPos.x, bodyCamPos.y, lForceVector.x, lForceVector.y)
-
-				--Selection Box
-				if(lActor.selected == true) then
-					love.graphics.setColor(255,255,255)
-					love.graphics.rectangle("line", bodyCamPos.x - (math.abs(AABBtopLeftX) * self.pxPerUnit), bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit), (AABBbottomRightX - AABBtopLeftX) * self.pxPerUnit, (AABBbottomRightY - AABBtopLeftY) * self.pxPerUnit)
+				if((linVelX > 0) or (linVelY > 0)) then
+					local linVel = Vector:new({x = linVelX, y = -linVelY})
+					linVel = (linVel * self.pxPerUnit) + bodyCamPos
+					love.graphics.setColor(113, 188, 120) --Fern Green
+					love.graphics.setLine(1, 'smooth')
+					love.graphics.line(bodyCamPos.x, bodyCamPos.y, linVel.x, linVel.y)
+					--Maybe a nice little arrowhead?
 				end
 			end
 		end
@@ -235,6 +302,7 @@ function Camera:render()
 	love.graphics.setColor(210,180,140)
 	local center_x = (love.graphics.getWidth() / 2)
 	local center_y = (love.graphics.getHeight() / 2)
+	love.graphics.setLine(1, 'smooth')
 	love.graphics.line(center_x - 10, center_y, center_x + 10, center_y)
 	love.graphics.line(center_x, center_y - 10, center_x, center_y + 10)
 end

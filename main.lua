@@ -23,8 +23,6 @@ function love.draw()
 end
 
 function love.mousepressed(x, y, button)
-	-- https://love2d.org/wiki/MouseConstant
-
 	game:mousepressed(x, y, button)
 	loveframes.mousepressed(x, y, button)
 end
@@ -36,7 +34,6 @@ function love.mousereleased(x, y, button)
 end
 
 function love.keypressed(key, unicode)
-	-- https://love2d.org/wiki/KeyConstant
 	loveframes.keypressed(key, unicode)
 	game:keypressed(key, unicode)
 end
