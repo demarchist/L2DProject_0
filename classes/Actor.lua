@@ -4,6 +4,8 @@
 
 require('classes.Class')
 require('classes.Vector')
+require('include.color')
+
 
 Actor = Class("Actor")
 
@@ -120,21 +122,21 @@ function Actor:draw()
 
 	if(self.objPoint ~= nil) then
 		--Line to objPoint
-		love.graphics.setColor(255,192,203)
+		love.graphics.setColor(color.PINK)
 		love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, self.objPoint.x, self.objPoint.y)
 
 		--Direction to objPoint indicator
-		love.graphics.setColor(128,0,0)
+		love.graphics.setColor(color.MAROON)
 		love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, bodyWorldPos.x + (shapeRadius * math.cos(bodyAngle + self.objTheta)), bodyWorldPos.y + (shapeRadius * math.sin(bodyAngle + self.objTheta)))
 	end
 
 	--Facing indicator
-	love.graphics.setColor(210,180,140)
+	love.graphics.setColor(color.TAN)
 	love.graphics.circle("line", bodyWorldPos.x, bodyWorldPos.y, shapeRadius,50)
 	love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, bodyWorldPos.x + (shapeRadius * math.cos(bodyAngle)), bodyWorldPos.y + (shapeRadius * math.sin(bodyAngle)))
 
 	--Velocity Vector
-	love.graphics.setColor(113, 188, 120) --Fern Green
+	love.graphics.setColor(color.FERN_GREEN)
 	local linVelX, linVelY = self.body:getLinearVelocity()
 	local linVel = Vector:new({x = linVelX, y = linVelY})
 	linVel = linVel + bodyWorldPos
@@ -142,7 +144,7 @@ function Actor:draw()
 	--Maybe a nice little arrowhead?
 
 	--NameTag
-	love.graphics.setColor(153,153,255)
+	love.graphics.setColor(color.PERIWINKLE)
 	love.graphics.setFont(self.nametagFont)
 	love.graphics.print(self.name, bodyWorldPos.x - (self.nametagFont:getWidth(self.name)/2), bodyWorldPos.y - (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
 
@@ -152,7 +154,7 @@ function Actor:draw()
 	--Selection Box
 	--love.graphics.print(tostring(self.selected), bodyWorldPos.x - (self.nametagFont:getWidth(tostring(self.selected)) / 2), bodyWorldPos.y + (self.nametagFont:getHeight()),0,1,1,0,0,0,0)
 	if(self.selected == true) then
-		love.graphics.setColor(255,255,255)
+		love.graphics.setColor(color.WHITE)
 		local topLeftX, topLeftY, bottomRightX, bottomRightY = self.shape:computeAABB( 0, 0, self.body:getAngle(), 1 )
 		love.graphics.rectangle("line", bodyWorldPos.x - math.abs(topLeftX), bodyWorldPos.y - math.abs(topLeftY), (bottomRightX - topLeftX), (bottomRightY - topLeftY))
 	end

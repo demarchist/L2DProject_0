@@ -6,6 +6,8 @@
 
 require('classes.Class')
 require('classes.Vector')
+require('include.color')
+
 
 Camera = Class("Camera")
 
@@ -179,7 +181,7 @@ function Camera:render()
 				if(lShape:getType() == 'circle') then
 					local shapeRadius = lShape:getRadius() * self.pxPerUnit
 
-					love.graphics.setColor(210,180,140)
+					love.graphics.setColor(color.TAN)
 					love.graphics.setLine(2, 'smooth')
 					love.graphics.circle("line", bodyCamPos.x, bodyCamPos.y, shapeRadius, 50)
 					love.graphics.line(bodyCamPos.x, bodyCamPos.y, (bodyCamPos.x + (shapeRadius * math.cos(bodyAngle))), (bodyCamPos.y - (shapeRadius * math.sin(bodyAngle))))
@@ -189,11 +191,11 @@ function Camera:render()
 					local x1, y1, x2, y2 = lShape:getPoints()
 					local pointOneCamPos = self:worldPosToCameraPos(x1, y1)
 					local pointTwoCamPos = self:worldPosToCameraPos(x2, y2)
-					love.graphics.setColor(169,169,169) -- Dark Gray
+					love.graphics.setColor(color.DARK_GRAY)
 					love.graphics.setLine(2, 'smooth')
 					love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
 				elseif(lShape:getType() == 'chain') then
-					love.graphics.setColor(169,169,169) -- Dark Gray
+					love.graphics.setColor(color.DARK_GRAY)
 					love.graphics.setLine(4, 'smooth')
 					local a = self:worldPosToCameraPos(lShape:getPoint(1))
 					for i = 2, lShape:getVertexCount() do
@@ -208,7 +210,7 @@ function Camera:render()
 				local lActor = lFixture:getUserData()
 				if(lActor ~= nil) then
 					--Force Vector
-					love.graphics.setColor(206, 32, 41) --Fire Engine Red
+					love.graphics.setColor(color.FIRE_ENGINE_RED)
 					local lForceVector = Vector:new({x = lActor.forceVector.x, y = -lActor.forceVector.y})
 					lForceVector = (lForceVector * self.pxPerUnit) + bodyCamPos
 					love.graphics.setLine(1, 'smooth')
@@ -216,7 +218,7 @@ function Camera:render()
 
 					--NameTag
 					local AABBtopLeftX, AABBtopLeftY, AABBbottomRightX, AABBbottomRightY = lShape:computeAABB( 0, 0, bodyAngle, 1 )
-					love.graphics.setColor(153,153,255) --Periwinkle
+					love.graphics.setColor(color.PERIWINKLE)
 					love.graphics.setFont(lActor.nametagFont)
 					love.graphics.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2),
 					                                 bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),
@@ -225,14 +227,14 @@ function Camera:render()
 					if(lActor.objPoint ~= nil) then
 						local lActorObjective = self:worldPosToCameraPos(lActor.objPoint.x, lActor.objPoint.y)
 						--Line to objPoint
-						love.graphics.setColor(255,192,203) --Pink
+						love.graphics.setColor(color.PINK)
 						love.graphics.setLine(2, 'smooth')
 						love.graphics.line(bodyCamPos.x, bodyCamPos.y, lActorObjective.x, lActorObjective.y)
 
 						--Direction to objPoint indicator
 						if(lShape:getType() == 'circle') then
 							local shapeRadius = lShape:getRadius() * self.pxPerUnit
-							love.graphics.setColor(128,0,0) --Maroon
+							love.graphics.setColor(color.MAROON)
 							love.graphics.setLine(1, 'smooth')
 							love.graphics.line(bodyCamPos.x, bodyCamPos.y,
 							                   bodyCamPos.x + (shapeRadius * math.cos(bodyAngle + lActor.objTheta)),
@@ -242,7 +244,7 @@ function Camera:render()
 
 					--Selection Box
 					if(lActor.selected == true) then
-						love.graphics.setColor(255,255,255)
+						love.graphics.setColor(color.WHITE)
 						love.graphics.rectangle("line", bodyCamPos.x - (math.abs(AABBtopLeftX) * self.pxPerUnit),
 						                                bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit),
 						                                (AABBbottomRightX - AABBtopLeftX) * self.pxPerUnit,
@@ -255,7 +257,7 @@ function Camera:render()
 				if((linVelX > 0) or (linVelY > 0)) then
 					local linVel = Vector:new({x = linVelX, y = -linVelY})
 					linVel = (linVel * self.pxPerUnit) + bodyCamPos
-					love.graphics.setColor(113, 188, 120) --Fern Green
+					love.graphics.setColor(color.FERN_GREEN)
 					love.graphics.setLine(1, 'smooth')
 					love.graphics.line(bodyCamPos.x, bodyCamPos.y, linVel.x, linVel.y)
 					--Maybe a nice little arrowhead?
@@ -265,13 +267,13 @@ function Camera:render()
 	end
 
 	-- draw a selection box
-	love.graphics.setColor(255,255,255)
+	love.graphics.setColor(color.WHITE)
 	if(self.selectBox.toggle == true) then
 		love.graphics.rectangle("line", self.selectBox.x1, self.selectBox.y1, self.selectBox.x2  - self.selectBox.x1, self.selectBox.y2 - self.selectBox.y1)
 	end
 
 	--A cross-hair thing
-	love.graphics.setColor(210,180,140)
+	love.graphics.setColor(color.TAN)
 	local center_x = (love.graphics.getWidth() / 2)
 	local center_y = (love.graphics.getHeight() / 2)
 	love.graphics.setLine(1, 'smooth')
