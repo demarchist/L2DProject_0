@@ -7,6 +7,10 @@ require('classes.Vector')
 require('include.color')
 
 
+local lg = love.graphics
+local lp = love.physics
+
+
 Actor = Class("Actor")
 
 function Actor:new ( init )
@@ -17,9 +21,9 @@ function Actor:new ( init )
 	actor.objPoint = Vector:new({x = actor.x, y = actor.y})
 	actor.selected = false
 
-	actor.body = love.physics.newBody(actor.world, actor.x, actor.y, 'dynamic')
-	actor.shape = love.physics.newCircleShape(1)
-	actor.fixture = love.physics.newFixture(actor.body, actor.shape, 1)
+	actor.body = lp.newBody(actor.world, actor.x, actor.y, 'dynamic')
+	actor.shape = lp.newCircleShape(1)
+	actor.fixture = lp.newFixture(actor.body, actor.shape, 1)
 	actor.fixture:setUserData(actor)
 	actor.fixture:setRestitution(0.9) --Unitless
 	actor.fixture:setDensity(25.5) --Kilograms per square meter
@@ -27,7 +31,7 @@ function Actor:new ( init )
 	actor.body:setAngle(0) --Radians
 	actor.objTheta = 0 --Radians
 	actor.forceVector = Vector:new({x = 0, y = 0})
-	actor.nametagFont = love.graphics.newFont(10) -- the number denotes the font size
+	actor.nametagFont = lg.newFont(10) -- the number denotes the font size
 
 	actor.maxAccel = 2 --20 --Meters per second per second
 	actor.maxVel = 3 --Meters per second
@@ -122,41 +126,41 @@ function Actor:draw()
 
 	if(self.objPoint ~= nil) then
 		--Line to objPoint
-		love.graphics.setColor(color.PINK)
-		love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, self.objPoint.x, self.objPoint.y)
+		lg.setColor(color.PINK)
+		lg.line(bodyWorldPos.x, bodyWorldPos.y, self.objPoint.x, self.objPoint.y)
 
 		--Direction to objPoint indicator
-		love.graphics.setColor(color.MAROON)
-		love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, bodyWorldPos.x + (shapeRadius * math.cos(bodyAngle + self.objTheta)), bodyWorldPos.y + (shapeRadius * math.sin(bodyAngle + self.objTheta)))
+		lg.setColor(color.MAROON)
+		lg.line(bodyWorldPos.x, bodyWorldPos.y, bodyWorldPos.x + (shapeRadius * math.cos(bodyAngle + self.objTheta)), bodyWorldPos.y + (shapeRadius * math.sin(bodyAngle + self.objTheta)))
 	end
 
 	--Facing indicator
-	love.graphics.setColor(color.TAN)
-	love.graphics.circle("line", bodyWorldPos.x, bodyWorldPos.y, shapeRadius,50)
-	love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, bodyWorldPos.x + (shapeRadius * math.cos(bodyAngle)), bodyWorldPos.y + (shapeRadius * math.sin(bodyAngle)))
+	lg.setColor(color.TAN)
+	lg.circle("line", bodyWorldPos.x, bodyWorldPos.y, shapeRadius,50)
+	lg.line(bodyWorldPos.x, bodyWorldPos.y, bodyWorldPos.x + (shapeRadius * math.cos(bodyAngle)), bodyWorldPos.y + (shapeRadius * math.sin(bodyAngle)))
 
 	--Velocity Vector
-	love.graphics.setColor(color.FERN_GREEN)
+	lg.setColor(color.FERN_GREEN)
 	local linVelX, linVelY = self.body:getLinearVelocity()
 	local linVel = Vector:new({x = linVelX, y = linVelY})
 	linVel = linVel + bodyWorldPos
-	love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, linVel.x, linVel.y)
+	lg.line(bodyWorldPos.x, bodyWorldPos.y, linVel.x, linVel.y)
 	--Maybe a nice little arrowhead?
 
 	--NameTag
-	love.graphics.setColor(color.PERIWINKLE)
-	love.graphics.setFont(self.nametagFont)
-	love.graphics.print(self.name, bodyWorldPos.x - (self.nametagFont:getWidth(self.name)/2), bodyWorldPos.y - (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
+	lg.setColor(color.PERIWINKLE)
+	lg.setFont(self.nametagFont)
+	lg.print(self.name, bodyWorldPos.x - (self.nametagFont:getWidth(self.name)/2), bodyWorldPos.y - (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
 
 	--print objTheta
-	--love.graphics.print(math.deg(self.objTheta), bodyWorldPos.x - (self.nametagFont:getWidth(math.deg(self.objTheta))/2), bodyWorldPos.y + (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
+	--lg.print(math.deg(self.objTheta), bodyWorldPos.x - (self.nametagFont:getWidth(math.deg(self.objTheta))/2), bodyWorldPos.y + (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
 
 	--Selection Box
-	--love.graphics.print(tostring(self.selected), bodyWorldPos.x - (self.nametagFont:getWidth(tostring(self.selected)) / 2), bodyWorldPos.y + (self.nametagFont:getHeight()),0,1,1,0,0,0,0)
+	--lg.print(tostring(self.selected), bodyWorldPos.x - (self.nametagFont:getWidth(tostring(self.selected)) / 2), bodyWorldPos.y + (self.nametagFont:getHeight()),0,1,1,0,0,0,0)
 	if(self.selected == true) then
-		love.graphics.setColor(color.WHITE)
+		lg.setColor(color.WHITE)
 		local topLeftX, topLeftY, bottomRightX, bottomRightY = self.shape:computeAABB( 0, 0, self.body:getAngle(), 1 )
-		love.graphics.rectangle("line", bodyWorldPos.x - math.abs(topLeftX), bodyWorldPos.y - math.abs(topLeftY), (bottomRightX - topLeftX), (bottomRightY - topLeftY))
+		lg.rectangle("line", bodyWorldPos.x - math.abs(topLeftX), bodyWorldPos.y - math.abs(topLeftY), (bottomRightX - topLeftX), (bottomRightY - topLeftY))
 	end
 
 end
