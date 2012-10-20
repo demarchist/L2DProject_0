@@ -54,35 +54,35 @@ function Camera:setTargetActor(targetEntity)
 end
 
 function Camera:calcWorldAperture()
-	if(love.graphics.isCreated() == false) then return(false) end
+	if(lg.isCreated() == false) then return(false) end
 	if(self.worldAperture == nil) then return(false) end
 	if(self.pxPerUnit <= 0) then return(false) end
 
-	self.worldAperture.topLeftX = (self.targetCoordinates.x - ((love.graphics.getWidth() / 2) * (1 / self.pxPerUnit)))
-	self.worldAperture.topLeftY =  (self.targetCoordinates.y - ((love.graphics.getHeight() / 2) * (1 / self.pxPerUnit)))
+	self.worldAperture.topLeftX = (self.targetCoordinates.x - ((lg.getWidth() / 2) * (1 / self.pxPerUnit)))
+	self.worldAperture.topLeftY =  (self.targetCoordinates.y - ((lg.getHeight() / 2) * (1 / self.pxPerUnit)))
 
-	self.worldAperture.bottomRightX = (self.targetCoordinates.x + ((love.graphics.getWidth() / 2) * (1 / self.pxPerUnit)))
-	self.worldAperture.bottomRightY = (self.targetCoordinates.y + ((love.graphics.getHeight() / 2) * (1 / self.pxPerUnit)))
+	self.worldAperture.bottomRightX = (self.targetCoordinates.x + ((lg.getWidth() / 2) * (1 / self.pxPerUnit)))
+	self.worldAperture.bottomRightY = (self.targetCoordinates.y + ((lg.getHeight() / 2) * (1 / self.pxPerUnit)))
 end
 
 function Camera:worldPosToCameraPos(worldPosX, worldPosY)
 	local DestR = Vector:new({x = 0, y = 0})
 
-	DestR.x =  ((worldPosX - self.targetCoordinates.x) * self.pxPerUnit) + (love.graphics.getWidth() / 2)
-	DestR.y = -((worldPosY - self.targetCoordinates.y) * self.pxPerUnit) + (love.graphics.getHeight() / 2)
+	DestR.x =  ((worldPosX - self.targetCoordinates.x) * self.pxPerUnit) + (lg.getWidth() / 2)
+	DestR.y = -((worldPosY - self.targetCoordinates.y) * self.pxPerUnit) + (lg.getHeight() / 2)
 
 	return(DestR)
 end
 
 function Camera:camPosToWorldPos(camX, camY)
-	camX = self.targetCoordinates.x + ((camX - (love.graphics.getWidth() / 2)) / self.pxPerUnit)
-	camY = self.targetCoordinates.y - ((camY - (love.graphics.getHeight() / 2)) / self.pxPerUnit)
+	camX = self.targetCoordinates.x + ((camX - (lg.getWidth() / 2)) / self.pxPerUnit)
+	camY = self.targetCoordinates.y - ((camY - (lg.getHeight() / 2)) / self.pxPerUnit)
 	return camX, camY
 end
 
 function Camera:update(dt)
 	if(self.selectBox.toggle == true) then
-		if love.graphics.hasFocus() then
+		if lg.hasFocus() then
 			self.selectBox.x2 = love.mouse.getX()
 			self.selectBox.y2 = love.mouse.getY()
 		end
@@ -188,27 +188,27 @@ function Camera:render()
 				if(lShape:getType() == 'circle') then
 					local shapeRadius = lShape:getRadius() * self.pxPerUnit
 
-					love.graphics.setColor(color.TAN)
-					love.graphics.setLine(2, 'smooth')
-					love.graphics.circle("line", bodyCamPos.x, bodyCamPos.y, shapeRadius, 50)
-					love.graphics.line(bodyCamPos.x, bodyCamPos.y, (bodyCamPos.x + (shapeRadius * math.cos(bodyAngle))), (bodyCamPos.y - (shapeRadius * math.sin(bodyAngle))))
+					lg.setColor(color.TAN)
+					lg.setLine(2, 'smooth')
+					lg.circle("line", bodyCamPos.x, bodyCamPos.y, shapeRadius, 50)
+					lg.line(bodyCamPos.x, bodyCamPos.y, (bodyCamPos.x + (shapeRadius * math.cos(bodyAngle))), (bodyCamPos.y - (shapeRadius * math.sin(bodyAngle))))
 				elseif(lShape:getType() == 'polygon') then
 					--Have to add the ability to draw polygon shapes here!
 				elseif(lShape:getType() == 'edge') then
 					local x1, y1, x2, y2 = lShape:getPoints()
 					local pointOneCamPos = self:worldPosToCameraPos(x1, y1)
 					local pointTwoCamPos = self:worldPosToCameraPos(x2, y2)
-					love.graphics.setColor(color.DARK_GRAY)
-					love.graphics.setLine(2, 'smooth')
-					love.graphics.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
+					lg.setColor(color.DARK_GRAY)
+					lg.setLine(2, 'smooth')
+					lg.line(pointOneCamPos.x, pointOneCamPos.y, pointTwoCamPos.x, pointTwoCamPos.y)
 				elseif(lShape:getType() == 'chain') then
-					love.graphics.setColor(color.DARK_GRAY)
-					love.graphics.setLine(4, 'smooth')
+					lg.setColor(color.DARK_GRAY)
+					lg.setLine(4, 'smooth')
 					local a = self:worldPosToCameraPos(lShape:getPoint(1))
 					for i = 2, lShape:getVertexCount() do
 						local b = self:worldPosToCameraPos(lShape:getPoint(i))
 
-						love.graphics.line(a.x, a.y, b.x, b.y)
+						lg.line(a.x, a.y, b.x, b.y)
 
 						a = b
 					end
@@ -217,47 +217,47 @@ function Camera:render()
 				local lActor = lFixture:getUserData()
 				if(lActor ~= nil) then
 					--Force Vector
-					love.graphics.setColor(color.FIRE_ENGINE_RED)
+					lg.setColor(color.FIRE_ENGINE_RED)
 					local lForceVector = Vector:new({x = lActor.forceVector.x, y = -lActor.forceVector.y})
 					lForceVector = (lForceVector * self.pxPerUnit) + bodyCamPos
-					love.graphics.setLine(1, 'smooth')
-					love.graphics.line(bodyCamPos.x, bodyCamPos.y, lForceVector.x, lForceVector.y)
+					lg.setLine(1, 'smooth')
+					lg.line(bodyCamPos.x, bodyCamPos.y, lForceVector.x, lForceVector.y)
 
 					--NameTag
 					local AABBtopLeftX, AABBtopLeftY, AABBbottomRightX, AABBbottomRightY = lShape:computeAABB( 0, 0, bodyAngle, 1 )
-					love.graphics.setColor(color.PERIWINKLE)
-					love.graphics.setFont(lActor.nametagFont)
-					love.graphics.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2),
+					lg.setColor(color.PERIWINKLE)
+					lg.setFont(lActor.nametagFont)
+					lg.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2),
 					                                 bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),
 					                                 0,1,1,0,0,0,0)
 
 					--Path to Objective
 					if(#lActor.pathToObj > 0) then
 						--Path lines
-						love.graphics.setColor(color.PINK)
-						love.graphics.setLine(2, 'smooth')
+						lg.setColor(color.PINK)
+						lg.setLine(2, 'smooth')
 						local a = Vector:new({x = bodyCamPos.x, y = bodyCamPos.y})
 						for k, lNode in ipairs(lActor.pathToObj) do
 							local lNodeCamPos = self:worldPosToCameraPos(lNode.x, lNode.y)
-							love.graphics.line(a.x, a.y, lNodeCamPos.x, lNodeCamPos.y)
+							lg.line(a.x, a.y, lNodeCamPos.x, lNodeCamPos.y)
 
 							a = lNodeCamPos
 						end
 
 						--Path Nodes
-						love.graphics.setColor(color.WHITE)
-						love.graphics.setLine(2, 'smooth')
+						lg.setColor(color.WHITE)
+						lg.setLine(2, 'smooth')
 						for k, lNode in pairs(lActor.pathToObj) do
 							local lNodeCamPos = self:worldPosToCameraPos(lNode.x, lNode.y)
-							love.graphics.circle("fill", lNodeCamPos.x, lNodeCamPos.y, 3, 10)
+							lg.circle("fill", lNodeCamPos.x, lNodeCamPos.y, 3, 10)
 						end
 
 						--Direction to objPoint indicator
 						if(lShape:getType() == 'circle') then
 							local shapeRadius = lShape:getRadius() * self.pxPerUnit
-							love.graphics.setColor(color.MAROON)
-							love.graphics.setLine(1, 'smooth')
-							love.graphics.line(bodyCamPos.x, bodyCamPos.y,
+							lg.setColor(color.MAROON)
+							lg.setLine(1, 'smooth')
+							lg.line(bodyCamPos.x, bodyCamPos.y,
 							                   bodyCamPos.x + (shapeRadius * math.cos(bodyAngle + lActor.objTheta)),
 							                   bodyCamPos.y - (shapeRadius * math.sin(bodyAngle + lActor.objTheta)))
 						end
@@ -265,8 +265,8 @@ function Camera:render()
 
 					--Selection Box
 					if(lActor.selected == true) then
-						love.graphics.setColor(color.WHITE)
-						love.graphics.rectangle("line", bodyCamPos.x - (math.abs(AABBtopLeftX) * self.pxPerUnit),
+						lg.setColor(color.WHITE)
+						lg.rectangle("line", bodyCamPos.x - (math.abs(AABBtopLeftX) * self.pxPerUnit),
 						                                bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit),
 						                                (AABBbottomRightX - AABBtopLeftX) * self.pxPerUnit,
 						                                (AABBbottomRightY - AABBtopLeftY) * self.pxPerUnit)
@@ -278,9 +278,9 @@ function Camera:render()
 				if((linVelX > 0) or (linVelY > 0)) then
 					local linVel = Vector:new({x = linVelX, y = -linVelY})
 					linVel = (linVel * self.pxPerUnit) + bodyCamPos
-					love.graphics.setColor(color.FERN_GREEN)
-					love.graphics.setLine(1, 'smooth')
-					love.graphics.line(bodyCamPos.x, bodyCamPos.y, linVel.x, linVel.y)
+					lg.setColor(color.FERN_GREEN)
+					lg.setLine(1, 'smooth')
+					lg.line(bodyCamPos.x, bodyCamPos.y, linVel.x, linVel.y)
 					--Maybe a nice little arrowhead?
 				end
 			end
@@ -288,18 +288,18 @@ function Camera:render()
 	end
 
 	-- draw a selection box
-	love.graphics.setColor(color.WHITE)
+	lg.setColor(color.WHITE)
 	if(self.selectBox.toggle == true) then
-		love.graphics.rectangle("line", self.selectBox.x1, self.selectBox.y1, self.selectBox.x2  - self.selectBox.x1, self.selectBox.y2 - self.selectBox.y1)
+		lg.rectangle("line", self.selectBox.x1, self.selectBox.y1, self.selectBox.x2  - self.selectBox.x1, self.selectBox.y2 - self.selectBox.y1)
 	end
 
 	--A cross-hair thing
-	love.graphics.setColor(color.TAN)
-	local center_x = (love.graphics.getWidth() / 2)
-	local center_y = (love.graphics.getHeight() / 2)
-	love.graphics.setLine(1, 'smooth')
-	love.graphics.line(center_x - 10, center_y, center_x + 10, center_y)
-	love.graphics.line(center_x, center_y - 10, center_x, center_y + 10)
+	lg.setColor(color.TAN)
+	local center_x = (lg.getWidth() / 2)
+	local center_y = (lg.getHeight() / 2)
+	lg.setLine(1, 'smooth')
+	lg.line(center_x - 10, center_y, center_x + 10, center_y)
+	lg.line(center_x, center_y - 10, center_x, center_y + 10)
 end
 
 function Camera.bbQueryCallback(lFixture)
