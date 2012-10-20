@@ -14,27 +14,32 @@ function Actor:new ( init )
 
 	actor.name = actor.name or 0
 	actor.world = actor.world or 0
-	actor.objPoint = Vector:new({x = actor.x, y = actor.y})
-	actor.selected = false
-
-	actor.body = love.physics.newBody(actor.world, actor.x, actor.y, 'dynamic')
-	actor.shape = love.physics.newCircleShape(1)
-	actor.fixture = love.physics.newFixture(actor.body, actor.shape, 1)
-	actor.fixture:setUserData(actor)
-	actor.fixture:setRestitution(0.9) --Unitless
-	actor.fixture:setDensity(25.5) --Kilograms per square meter
-	actor.body:isFixedRotation(false)
-	actor.body:setAngle(0) --Radians
-	actor.objTheta = 0 --Radians
-	actor.forceVector = Vector:new({x = 0, y = 0})
-	actor.nametagFont = love.graphics.newFont(10) -- the number denotes the font size
-
-	actor.maxAccel = 2 --20 --Meters per second per second
-	actor.maxVel = 3 --Meters per second
-
+	actor.pathToObj = {Vector:new({x = actor.x, y = actor.y})}
 	Actor.super.new(self, actor)
 
-	return(actor)
+	return(actor:init())
+end
+
+function Actor:init()
+	
+	self.selected = false
+
+	self.body = love.physics.newBody(self.world.physicsWorld, self.pathToObj[1].x, self.pathToObj[1].y, 'dynamic')
+	self.shape = love.physics.newCircleShape(1)
+	self.fixture = love.physics.newFixture(self.body, self.shape, 1)
+	self.fixture:setUserData(self)
+	self.fixture:setRestitution(0.9) --Unitless
+	self.fixture:setDensity(25.5) --Kilograms per square meter
+	self.body:isFixedRotation(false)
+	self.body:setAngle(0) --Radians
+	self.objTheta = 0 --Radians
+	self.forceVector = Vector:new({x = 0, y = 0})
+	self.nametagFont = love.graphics.newFont(10) -- the number denotes the font size
+
+	self.maxAccel = 2 --20 --Meters per second per second
+	self.maxVel = 3 --Meters per second
+
+	return(self)
 end
 
 function Actor:getName()
@@ -42,12 +47,21 @@ function Actor:getName()
 end
 
 function Actor:setObjective(x,y)
-	if(self.objPoint == nil) then
-		self.objPoint = Vector:new({x = x, y = y})
-	else
-		self.objPoint.x = x
-		self.objPoint.y = y
+	if(#self.pathToObj > 0) then
+		for k in pairs(self.pathToObj) do
+			self.pathToObj[k] = nil
+		end
 	end
+	table.insert(self.pathToObj,Vector:new({x = x, y = y}))
+end
+
+function Actor:pushPathNode(x,y)
+	if((#self.pathToObj > 0) and
+	   (self.pathToObj[1].x == x) and
+	   (self.pathToObj[1].y == y)) then
+	   return
+	end
+	table.insert(self.pathToObj,Vector:new({x = x, y = y}))
 end
 
 function Actor:getSelected()
@@ -59,11 +73,11 @@ function Actor:setSelected(lSelected)
 end
 
 function Actor:update()
-	if(self.objPoint ~= nil) then
-		if((math.abs(self.body:getX() - self.objPoint.x) > 1) or
-		   (math.abs(self.body:getY() - self.objPoint.y) > 1)) then
+	if( #self.pathToObj > 0) then
+		if((math.abs(self.body:getX() - self.pathToObj[1].x) > 1) or
+		   (math.abs(self.body:getY() - self.pathToObj[1].y) > 1)) then
 			local bodyVector = Vector:new({x = self.body:getX(), y = self.body:getY()})
-			local vectorToObj = self.objPoint - bodyVector
+			local vectorToObj = self.pathToObj[1] - bodyVector
 			local directionUnitVector = {x = math.cos(self.body:getAngle()), y = math.sin(self.body:getAngle())}
 
 			self.objTheta = math.atan2(directionUnitVector.x * vectorToObj:unit().y - directionUnitVector.y * vectorToObj:unit().x,
@@ -94,8 +108,8 @@ function Actor:update()
 
 				--this is an "authentic" force-based way of doing it.
 				--[[if(linVel:mag() >= self.maxVel) then
-					--force Vector plus the scalar projection of the force vector on to the velocity vector
-					self.forceVector = self.forceVector - ((Vector(linVel:unit()) * self.forceVector:dot(linVel)) / linVel:mag())
+				--force Vector plus the scalar projection of the force vector on to the velocity vector
+				self.forceVector = self.forceVector - ((Vector(linVel:unit()) * self.forceVector:dot(linVel)) / linVel:mag())
 				end]]
 
 				self.body:applyForce( self.forceVector.x, self.forceVector.y )
@@ -105,25 +119,27 @@ function Actor:update()
 				--self.body:applyLinearImpulse(self.forceVector.x, self.forceVector.y)
 			end
 		else
-			self.forceVector.x = 0
-			self.forceVector.y = 0
-			self.body:setLinearVelocity(0,0) --Put the brakes on manually
-			self.body:setAngularVelocity(0)
-			--self.objPoint = nil
+			if(#self.pathToObj > 0) then table.remove(self.pathToObj,1) end
+			if(#self.pathToObj == 0) then
+				self.forceVector.x = 0
+				self.forceVector.y = 0
+				self.body:setLinearVelocity(0,0) --Put the brakes on manually
+				self.body:setAngularVelocity(0)
+			end
 		end
 	end
 end
-
+--[[ saving this because there's some useful trig in there
 function Actor:draw()
 	--grab numbers I'm going to use a lot
 	local bodyAngle = self.body:getAngle()
 	local shapeRadius = self.shape:getRadius()
 	local bodyWorldPos = Vector:new({x = self.body:getX(), y = self.body:getY()})
 
-	if(self.objPoint ~= nil) then
+	if( #self.pathToObj > 0) then
 		--Line to objPoint
 		love.graphics.setColor(color.PINK)
-		love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, self.objPoint.x, self.objPoint.y)
+		love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, self.pathToObj[1].x, self.pathToObj[1].y)
 
 		--Direction to objPoint indicator
 		love.graphics.setColor(color.MAROON)
@@ -160,3 +176,4 @@ function Actor:draw()
 	end
 
 end
+]]

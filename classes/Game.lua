@@ -5,15 +5,15 @@
 Game = {}
 
 function Game:new()
-	require('classes.actor')
-	require('classes.camera')
+	require('classes.World')
+	require('classes.Actor')
+	require('classes.Camera')
 
 	local object = {
 		actors = {}
 	}
 
-	love.physics.setMeter(1) --This may be the default value
-	object.world = love.physics.newWorld(0,0,true)
+	object.world = World:new({name = "World_01"})
 
 	object.cam = Camera:new({world = object.world, pxPerUnit = 10})
 	object.cam:setTargetCoordinates(0,0)
@@ -21,10 +21,6 @@ function Game:new()
 	table.insert(object.actors,Actor:new({name = "Hero", world = object.world, x = 20, y = 20}))
 	table.insert(object.actors,Actor:new({name = "Monster", world = object.world, x = -20, y = -20}))
 
-	object.envBody = love.physics.newBody(object.world, 0, 0, 'static')
-	object.envShape = love.physics.newChainShape( false, -15,-15, -15,-10, 3,-10, 3,10, 10,10, 10,30, -10,30, -10,10, -3,10, -3,-4, -21,-4, -21,-15)
-	object.envFixture = love.physics.newFixture(object.envBody, object.envShape, 1)
-	
 	setmetatable(object, { __index = Game })  -- Inheritance
 
 	return(object)

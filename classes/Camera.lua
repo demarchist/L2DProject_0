@@ -14,7 +14,7 @@ Camera = Class("Camera")
 function Camera:new ( init )
 	local camera = init or {}
 
-	camera.targetWorld = init.world or nil
+	camera.targetWorld = init.world.physicsWorld or nil
 	camera.pxPerUnit = init.pxPerUnit or 1
 	camera.targetEntity = init.targetEntity or nil
 
@@ -34,7 +34,7 @@ end
 
 function Camera:setTargetWorld(targetWorld)
 	if(targetWorld == nil) then return(false) end
-	self.targetWorld = targetWorld
+	self.targetWorld = targetWorld.physicsWorld
 	return(true)
 end
 
@@ -146,7 +146,11 @@ function Camera:mousereleased(x, y, button)
 					if(lActor ~= nil) then
 						if(lActor.selected == true) then
 							local worldX, worldY = self:camPosToWorldPos(x, y)
-							lActor:setObjective(worldX, worldY)
+							if(love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')) then
+								lActor:pushPathNode(worldX,worldY)
+							else
+								lActor:setObjective(worldX, worldY)
+							end
 						end
 
 					end
@@ -224,12 +228,26 @@ function Camera:render()
 					                                 bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),
 					                                 0,1,1,0,0,0,0)
 
-					if(lActor.objPoint ~= nil) then
-						local lActorObjective = self:worldPosToCameraPos(lActor.objPoint.x, lActor.objPoint.y)
-						--Line to objPoint
+					--Path to Objective
+					if(#lActor.pathToObj > 0) then
+						--Path lines
 						love.graphics.setColor(color.PINK)
 						love.graphics.setLine(2, 'smooth')
-						love.graphics.line(bodyCamPos.x, bodyCamPos.y, lActorObjective.x, lActorObjective.y)
+						local a = Vector:new({x = bodyCamPos.x, y = bodyCamPos.y})
+						for k, lNode in ipairs(lActor.pathToObj) do
+							local lNodeCamPos = self:worldPosToCameraPos(lNode.x, lNode.y)
+							love.graphics.line(a.x, a.y, lNodeCamPos.x, lNodeCamPos.y)
+
+							a = lNodeCamPos
+						end
+
+						--Path Nodes
+						love.graphics.setColor(color.WHITE)
+						love.graphics.setLine(2, 'smooth')
+						for k, lNode in pairs(lActor.pathToObj) do
+							local lNodeCamPos = self:worldPosToCameraPos(lNode.x, lNode.y)
+							love.graphics.circle("fill", lNodeCamPos.x, lNodeCamPos.y, 3, 10)
+						end
 
 						--Direction to objPoint indicator
 						if(lShape:getType() == 'circle') then
