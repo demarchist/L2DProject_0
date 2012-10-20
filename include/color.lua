@@ -1,7 +1,7 @@
 color = {
 	DARK_GRAY       = { 169, 169, 169 },
-	FIRE_ENGINE_RED = { 206,  32,  41 },
 	FERN_GREEN      = { 113, 188, 120 },
+	FIRE_ENGINE_RED = { 206,  32,  41 },
 	MAROON          = { 128,   0,   0 },
 	PERIWINKLE      = { 153, 153, 255 },
 	PINK            = { 255, 192, 203 },

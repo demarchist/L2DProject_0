@@ -9,6 +9,9 @@ require('classes.Vector')
 require('include.color')
 
 
+local lg = love.graphics
+
+
 Camera = Class("Camera")
 
 function Camera:new ( init )
