@@ -49,6 +49,10 @@ end
 
 function Actor:setObjective(x,y)
 	self.pathToObj = self.world:path(self.body:getX(), self.body:getY(), x, y) or {}
+
+	for _, p in ipairs(self.pathToObj) do
+		p.x = p.x + (math.random() - 0.5)/20  -- Jitter to prevent absolutely vertical movement.
+	end
 end
 
 function Actor:pushPathNode(x,y)
