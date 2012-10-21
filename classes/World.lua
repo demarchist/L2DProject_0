@@ -18,7 +18,6 @@ function World:new ( init )
 end
 
 function World:init ()
-
 	love.physics.setMeter(1) --This may be the default value
 	self.physicsWorld = love.physics.newWorld(0,0,true)
 
@@ -31,7 +30,40 @@ function World:init ()
 	self.envShape = love.physics.newChainShape( false, -15,-15, -15,-10, 3,-10, 3,10, 10,10, 10,30, -10,30, -10,10, -3,10, -3,-4, -21,-4, -21,-15)
 	self.envFixture = love.physics.newFixture(self.envBody, self.envShape, 1)
 
+	love.graphics.line(-16, 13, -14, 13)
+	self.pathGraph = {}
+	self:updatePathing()
+
 	return(self)
+end
+
+
+function World:updatePathing()
+	local pathGraph = self.pathGraph
+
+	for _, pt in ipairs(self.mapGraph) do
+		pathGraph[pt.x] = pathGraph[pt.x] or {}
+		pathGraph[pt.x][pt.y] = pathGraph[pt.x][pt.y] or 0
+
+
+		local function ray_cb()
+			pathGraph[pt.x][pt.y] = 1
+			return 0
+		end
+
+		local world = self.physicsWorld
+		world:rayCast(pt.x, pt.y, pt.x+1, pt.y, ray_cb)
+		world:rayCast(pt.x, pt.y, pt.x,   pt.y+1, ray_cb)
+	end
+
+	self.pather = require('libraries.Jumper.init')(pathGraph, 0)
+end
+
+
+function World:path(x1, y1, x2, y2)
+	local floor = math.floor
+	print(floor(x1) .. ", " .. floor(y1) .. " -> " .. floor(x2) .. ", " .. floor(y2))
+	return self.pather:getPath(floor(x1), floor(y1), floor(x2), floor(y2))
 end
 
 function World:update(dt)

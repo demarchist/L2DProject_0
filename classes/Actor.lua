@@ -4,6 +4,7 @@
 
 require('classes.Class')
 require('classes.Vector')
+require('classes.World')
 require('include.color')
 
 
@@ -47,12 +48,7 @@ function Actor:getName()
 end
 
 function Actor:setObjective(x,y)
-	if(#self.pathToObj > 0) then
-		for k in pairs(self.pathToObj) do
-			self.pathToObj[k] = nil
-		end
-	end
-	table.insert(self.pathToObj,Vector:new({x = x, y = y}))
+	self.pathToObj = self.world:path(self.body:getX(), self.body:getY(), x, y) or {}
 end
 
 function Actor:pushPathNode(x,y)
