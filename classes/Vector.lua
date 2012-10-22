@@ -1,9 +1,10 @@
 require'classes/Class'
 
 
-Vector = Class("Vector")
+Vector = Class("Vector", nil, {x = 0, y = 0})
 
-local set_vector_operators  -- Defined at end.
+
+local set_vector_operators  -- Meta-method definitions function.  Defined at end.
 
 
 
@@ -24,10 +25,13 @@ function Vector:new ( init_or_x, y )
 	local vector = type(init_or_x) == 'table' and init_or_x or {}
 
 
-	vector.x = type(init_or_x) == 'number' and init_or_x or vector.x or 0
-	vector.y = type(init_or_x) == 'number' and y or vector.y or 0
+	vector.x = type(init_or_x) == 'number' and init_or_x or vector.x
+	vector.y = type(init_or_x) == 'number' and y or vector.y
+
 
 	Vector.super.new(self, vector)
+
+
 	set_vector_operators(vector)
 
 
@@ -68,16 +72,21 @@ end
 -- ===  METHOD  ========================================================================
 --    Signature:  Vector:unit ( ) -> table
 --  Description:  Compute a unit vector in the same direction as this vector.
---      Returns:  Table of components forming a vector of magnitude 1 in the same
---                direction as this vector.
+--      Returns:  Vector object or table of components describing a vector of magnitude
+--                1 in the same direction as this vector.
 --         Note:  Works equally well as Vector.unit(v) for any object with keys 'x' and
---                'y'.  Pass return to Vector:new() to create a full Vector object.
+--                'y'.  A simple table of components is returned if the input is not a
+--                Vector object.
 -- =====================================================================================
 --]]
 function Vector:unit ( )
 	local mag = Vector.mag(self)
 
-	return { x = self.x / mag, y = self.y / mag }
+	if (type(self.is_a) == 'function' and self:is_a(Vector)) then
+		return self / mag
+	else
+		return { x = self.x / mag, y = self.y / mag }
+	end
 end
 
 
