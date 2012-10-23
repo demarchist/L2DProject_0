@@ -215,7 +215,7 @@ end
 
 --[[
 -- ===  CLASS FUNCTION  ================================================================
---    Signature:  Actor.line_to ( x, y ) -> table
+--    Signature:  Actor.path_to ( x, y ) -> table
 --  Description:  Obtain a move describing a world-assisted path from the current
 --                position.
 --   Parameters:  x : [number] : horizontal component of the destination point

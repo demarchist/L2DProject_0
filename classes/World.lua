@@ -62,7 +62,6 @@ end
 
 function World:path(x1, y1, x2, y2)
 	local floor = math.floor
-	print(floor(x1) .. ", " .. floor(y1) .. " -> " .. floor(x2) .. ", " .. floor(y2))
 	return self.pather:getPath(floor(x1), floor(y1), floor(x2), floor(y2))
 end
 
