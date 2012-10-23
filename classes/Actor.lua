@@ -21,7 +21,6 @@ Actor = Class("Actor", nil, {
 
 	-- The following are input as values on construction,
 	-- but must be retrieved as function calls (e.g. actor.loc.x()).
-	-- They reflect the corresponding values from the physics body.
 	angle        = 0,
 	loc          = { x = 0, y = 0 },  -- World coordinates.
 })
@@ -195,10 +194,10 @@ function Actor:update ( )
 	end
 
 
-	local dest_heading = Vector(move.dest.x - self.loc.x(), move.dest.y - self.loc.y())
-	local dest_angle = math.atan2(dest_heading.y, dest_heading.x)
-
-	self.deflection = dest_angle - self.angle()
+	local dest_heading = (Vector(move.dest) - Vector(self.loc.x(), self.loc.y())):unit()
+	local body_heading = Vector(math.cos(self.angle()), math.sin(self.angle()))
+	self.deflection = math.atan2(body_heading.x * dest_heading.y - body_heading.y * dest_heading.x,
+	                             body_heading * dest_heading)
 
 	if (math.abs(self.deflection) > math.pi / 20) then
 		self.body:applyAngularImpulse(0.1 * (self.deflection / math.abs(self.deflection)))
