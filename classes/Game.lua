@@ -18,8 +18,8 @@ function Game:new()
 	object.cam = Camera:new({world = object.world, pxPerUnit = 10})
 	object.cam:setTargetCoordinates(0,0)
 
-	table.insert(object.actors,Actor:new({name = "Hero", world = object.world, x = 20, y = 20}))
-	table.insert(object.actors,Actor:new({name = "Monster", world = object.world, x = -20, y = -20}))
+	table.insert(object.actors,Actor:new({name = "Hero", world = object.world, loc = {x = 20, y = 20}}))
+	table.insert(object.actors,Actor:new({name = "Monster", world = object.world, loc = {x = -20, y = -20}}))
 
 	setmetatable(object, { __index = Game })  -- Inheritance
 

@@ -1,179 +1,289 @@
---[[------------------------------------------------
-	Actor Class
---]]------------------------------------------------
+local lp = require'love.physics'
 
-require('classes.Class')
-require('classes.Vector')
-require('classes.World')
-require('include.color')
+require'classes.Class'
+require'classes.Vector'
+require'classes.World'
+require'include.color'
 
 
-Actor = Class("Actor")
+Actor = Class("Actor", nil, {
+	name         = "_unnamed_actor",
+	body         = nil,
+	world        = nil,
+	max_velocity = 3,      -- m/s
+	max_accel    = 2,      -- m/s^2
+	selected     = false,
+	force        = Vector(),
+	path         = { step = 0, moves = {} },
 
+
+	-- Read-only.
+	deflection   = 0,      -- Radians.  Difference between current and desired headings.
+
+
+	-- The following are input as values on construction,
+	-- but must be retrieved as function calls (e.g. actor.loc.x()).
+	angle        = 0,
+	loc          = { x = 0, y = 0 },  -- World coordinates.
+})
+
+
+
+--[[
+====================================================================================
+  Class utility.
+====================================================================================
+--]]
+
+--[[
+-- ===  CONSTRUCTOR  ===================================================================
+--    Signature:  Actor:new ( [init] ) -> table
+--  Description:  Instantiate a new actor object.
+--   Parameters:  init : [table] : object containing initial parameters
+--      Returns:  New Actor object table (in 'init', if provided).
+-- =====================================================================================
+--]]
 function Actor:new ( init )
 	local actor = init or {}
 
-	actor.name = actor.name or 0
-	actor.world = actor.world or 0
-	actor.pathToObj = {Vector:new({x = actor.x, y = actor.y})}
 	Actor.super.new(self, actor)
 
-	return(actor:init())
+	return actor:init()
 end
 
-function Actor:init()
-	
-	self.selected = false
 
-	self.body = love.physics.newBody(self.world.physicsWorld, self.pathToObj[1].x, self.pathToObj[1].y, 'dynamic')
-	self.shape = love.physics.newCircleShape(1)
-	self.fixture = love.physics.newFixture(self.body, self.shape, 1)
-	self.fixture:setUserData(self)
-	self.fixture:setRestitution(0.9) --Unitless
-	self.fixture:setDensity(25.5) --Kilograms per square meter
-	self.body:isFixedRotation(false)
-	self.body:setAngle(0) --Radians
-	self.objTheta = 0 --Radians
-	self.forceVector = Vector:new({x = 0, y = 0})
-	self.nametagFont = love.graphics.newFont(10) -- the number denotes the font size
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:init ( ) -> table
+--  Description:  Apply default properties to an Actor object and create its sub-tables.
+--      Returns:  Self (Actor object).
+-- =====================================================================================
+--]]
+function Actor:init ( )
+	if self.world and self.world.physicsWorld then
+		self.body = lp.newBody(self.world.physicsWorld, nil, nil, 'dynamic')
 
-	self.maxAccel = 2 --20 --Meters per second per second
-	self.maxVel = 3 --Meters per second
+		if type(self.loc.x) == 'number' then
+			self.body:setX(self.loc.x)
+		end
+		self.loc.x = function() return self.body:getX() end
 
-	return(self)
-end
+		if type(self.loc.y) == 'number' then
+			self.body:setY(self.loc.y)
+		end
+		self.loc.y = function() return self.body:getY() end
 
-function Actor:getName()
-	return(self.name)
-end
+		if type(self.angle) == 'number' then
+			self.body:setAngle(self.angle)
+		end
+		self.angle = function() return self.body:getAngle() end
 
-function Actor:setObjective(x,y)
-	self.pathToObj = self.world:path(self.body:getX(), self.body:getY(), x, y) or {}
+		self.body:isFixedRotation(false)
 
-	for _, p in ipairs(self.pathToObj) do
-		p.x = p.x + (math.random() - 0.5)/20  -- Jitter to prevent absolutely vertical movement.
+
+		local shape = lp.newCircleShape(1)
+
+		local fixture = lp.newFixture(self.body, shape, 1)
+		fixture:setUserData(self)
+		fixture:setRestitution(0.9)
+		fixture:setDensity(25.5)  -- kg/m^2
 	end
+
+
+	self.path  = { step = 0, moves = {} }
+	self.force = Vector()
+
+
+	return self
 end
 
-function Actor:pushPathNode(x,y)
-	if((#self.pathToObj > 0) and
-	   (self.pathToObj[1].x == x) and
-	   (self.pathToObj[1].y == y)) then
-	   return
-	end
-	table.insert(self.pathToObj,Vector:new({x = x, y = y}))
+
+
+--[[
+====================================================================================
+  Pathing and maneuvering.
+====================================================================================
+--]]
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:current_move ( ) -> table|nil
+--  Description:  Obtain this actor's current movement command.
+--      Returns:  Movement description object or nil if the move list is empty.
+-- =====================================================================================
+--]]
+function Actor:current_move ( )
+	return self.path.moves[self.path.step]
 end
 
-function Actor:getSelected()
-	return(self.selected)
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:append_move ( move ) -> nil
+--  Description:  Add a move to the end of this actor's move list.
+--   Parameters:  move : [table|nil] : movement description object
+-- =====================================================================================
+--]]
+function Actor:append_move ( move )
+	table.insert(self.path.moves, move)
+
+	if self.path.step == 0 then self.path.step = 1 end
 end
 
-function Actor:setSelected(lSelected)
-	self.selected = lSelected
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:set_moves ( [moves] ) -> nil
+--  Description:  Replace this actor's move list with the given moves.
+--   Parameters:  move : [table|nil] : movement description object or a list of such
+--                                     objects
+--         Note:  To clear the move list, pass no moves.
+-- =====================================================================================
+--]]
+function Actor:set_moves ( moves )
+	self.path.moves = moves and moves.type and {moves} or moves
+	self.path.step = moves and 1 or 0
 end
 
-function Actor:update()
-	if( #self.pathToObj > 0) then
-		if((math.abs(self.body:getX() - self.pathToObj[1].x) > 1) or
-		   (math.abs(self.body:getY() - self.pathToObj[1].y) > 1)) then
-			local bodyVector = Vector:new({x = self.body:getX(), y = self.body:getY()})
-			local vectorToObj = self.pathToObj[1] - bodyVector
-			local directionUnitVector = {x = math.cos(self.body:getAngle()), y = math.sin(self.body:getAngle())}
 
-			self.objTheta = math.atan2(directionUnitVector.x * vectorToObj:unit().y - directionUnitVector.y * vectorToObj:unit().x,
-			                           directionUnitVector.x * vectorToObj:unit().x + directionUnitVector.y * vectorToObj:unit().y)
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:expand_current_move ( ) -> nil
+--  Description:  Update this actor's move list by expanding the current move, if
+--                necessary.
+-- =====================================================================================
+--]]
+function Actor:expand_current_move ( )
+	local move = self:current_move()
 
-			if(math.abs(self.objTheta) > math.pi / 20) then
-				self.body:applyAngularImpulse(0.1 * (self.objTheta / math.abs(self.objTheta)))
-				--Need to limit maximum angular velocity!
-			else
-				--I should really use torque to zero-out the angular velocity
-				--so that the body is pointing in the right direction, but
-				--for now I'll cheat.
-				self.body:setAngularVelocity(0)
-				self.body:setAngle(self.body:getAngle() + self.objTheta)
+	if move and move.type == 'path' then
+		local x = self.path.step <= 1 and self.loc.x() or self.path.moves[self.path.step-1].dest.x
+		local y = self.path.step <= 1 and self.loc.y() or self.path.moves[self.path.step-1].dest.y
 
-				--I'll need to limit maximum linear velocity.
-				local linVelX, linVelY = self.body:getLinearVelocity()
-				local linVel = Vector:new({x = linVelX, y = linVelY}) --body local
+		local path_moves = self.world:path(self.loc.x(), self.loc.y(), move.dest.x, move.dest.y) or {}
 
-				--local forceVector = nil
-				if(linVel:mag() == 0) then
-					self.forceVector = Vector(vectorToObj:unit())
-				else
-					self.forceVector = Vector(Vector(vectorToObj:unit()) - Vector(linVel:unit()))
-				end
+		for _, p in ipairs(path_moves) do
+			p.x = p.x + (math.random() - 0.5) / 20  -- Jitter to prevent absolutely vertical movement.
+		end
 
-				self.forceVector = Vector((Vector(vectorToObj:unit()) + Vector(self.forceVector:unit())):unit()) * self.maxAccel
+		self.path.moves[self.path.step] = nil
 
-				--this is an "authentic" force-based way of doing it.
-				--[[if(linVel:mag() >= self.maxVel) then
-				--force Vector plus the scalar projection of the force vector on to the velocity vector
-				self.forceVector = self.forceVector - ((Vector(linVel:unit()) * self.forceVector:dot(linVel)) / linVel:mag())
-				end]]
-
-				self.body:applyForce( self.forceVector.x, self.forceVector.y )
-
-				--But doing this might actually be better because applying an impulse overwrites existing forces
-				--self.forceVector = self.forceVector * self.maxAccel
-				--self.body:applyLinearImpulse(self.forceVector.x, self.forceVector.y)
-			end
-		else
-			if(#self.pathToObj > 0) then table.remove(self.pathToObj,1) end
-			if(#self.pathToObj == 0) then
-				self.forceVector.x = 0
-				self.forceVector.y = 0
-				self.body:setLinearVelocity(0,0) --Put the brakes on manually
-				self.body:setAngularVelocity(0)
-			end
+		for i, m in ipairs(path_moves) do
+			table.insert(self.path.moves, self.path.step + i - 1, Actor.line_to(m.x, m.y))
 		end
 	end
 end
---[[ saving this because there's some useful trig in there
-function Actor:draw()
-	--grab numbers I'm going to use a lot
-	local bodyAngle = self.body:getAngle()
-	local shapeRadius = self.shape:getRadius()
-	local bodyWorldPos = Vector:new({x = self.body:getX(), y = self.body:getY()})
 
-	if( #self.pathToObj > 0) then
-		--Line to objPoint
-		love.graphics.setColor(color.PINK)
-		love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, self.pathToObj[1].x, self.pathToObj[1].y)
 
-		--Direction to objPoint indicator
-		love.graphics.setColor(color.MAROON)
-		love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, bodyWorldPos.x + (shapeRadius * math.cos(bodyAngle + self.objTheta)), bodyWorldPos.y + (shapeRadius * math.sin(bodyAngle + self.objTheta)))
+--
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:expand_all_moves ( ) -> nil
+--  Description:  Expand out this actor's move list by resolving all complex moves.
+-- =====================================================================================
+--]]
+function Actor:expand_all_moves ( )
+	local s = self.path.step
+
+
+	self.path.step = 1
+	while self:current_move() do
+		self:expand_current_move()
+		self.path.step = self.path.step + 1
 	end
 
-	--Facing indicator
-	love.graphics.setColor(color.TAN)
-	love.graphics.circle("line", bodyWorldPos.x, bodyWorldPos.y, shapeRadius,50)
-	love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, bodyWorldPos.x + (shapeRadius * math.cos(bodyAngle)), bodyWorldPos.y + (shapeRadius * math.sin(bodyAngle)))
-
-	--Velocity Vector
-	love.graphics.setColor(color.FERN_GREEN)
-	local linVelX, linVelY = self.body:getLinearVelocity()
-	local linVel = Vector:new({x = linVelX, y = linVelY})
-	linVel = linVel + bodyWorldPos
-	love.graphics.line(bodyWorldPos.x, bodyWorldPos.y, linVel.x, linVel.y)
-	--Maybe a nice little arrowhead?
-
-	--NameTag
-	love.graphics.setColor(color.PERIWINKLE)
-	love.graphics.setFont(self.nametagFont)
-	love.graphics.print(self.name, bodyWorldPos.x - (self.nametagFont:getWidth(self.name)/2), bodyWorldPos.y - (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
-
-	--print objTheta
-	--love.graphics.print(math.deg(self.objTheta), bodyWorldPos.x - (self.nametagFont:getWidth(math.deg(self.objTheta))/2), bodyWorldPos.y + (self.nametagFont:getHeight() + 15),0,1,1,0,0,0,0)
-
-	--Selection Box
-	--love.graphics.print(tostring(self.selected), bodyWorldPos.x - (self.nametagFont:getWidth(tostring(self.selected)) / 2), bodyWorldPos.y + (self.nametagFont:getHeight()),0,1,1,0,0,0,0)
-	if(self.selected == true) then
-		love.graphics.setColor(color.WHITE)
-		local topLeftX, topLeftY, bottomRightX, bottomRightY = self.shape:computeAABB( 0, 0, self.body:getAngle(), 1 )
-		love.graphics.rectangle("line", bodyWorldPos.x - math.abs(topLeftX), bodyWorldPos.y - math.abs(topLeftY), (bottomRightX - topLeftX), (bottomRightY - topLeftY))
-	end
-
+	self.path.step = s
 end
-]]
+
+
+--[[
+-- ===  CLASS FUNCTION  ================================================================
+--    Signature:  Actor.line_to ( x, y ) -> table
+--  Description:  Obtain a move describing a simple straight line from the current
+--                position.
+--   Parameters:  x : [number] : horizontal component of the destination point
+--                y : [number] : vertical component of the destination point
+--      Returns:  A movement description object.
+-- =====================================================================================
+--]]
+function Actor.line_to ( x, y )
+	return { type = 'line', dest = { x = x, y = y } }
+end
+
+
+--[[
+-- ===  CLASS FUNCTION  ================================================================
+--    Signature:  Actor.line_to ( x, y ) -> table
+--  Description:  Obtain a move describing a world-assisted path from the current
+--                position.
+--   Parameters:  x : [number] : horizontal component of the destination point
+--                y : [number] : vertical component of the destination point
+--      Returns:  A movement description object.
+-- =====================================================================================
+--]]
+function Actor.path_to ( x, y )
+	return { type = 'path', dest = { x = x, y = y } }
+end
+
+
+--[[
+====================================================================================
+  Event handling.
+====================================================================================
+--]]
+
+function Actor:update ( )
+	local move = self:current_move()
+
+	if not move then
+		return
+	end
+
+	self:expand_current_move()
+
+	-- Get the next move when the current one is completed.
+	if Vector.mag({x = move.dest.x - self.loc.x(), y = move.dest.y - self.loc.y()}) < 1 then
+		self.path.step = self.path.step + 1
+		move = self:current_move()
+		self:expand_current_move()
+
+		-- Stop at the end of the move list.
+		if not move then
+			self.path.step = 0
+			move = nil
+
+			self.force.x = 0
+			self.force.y = 0
+			self.body:setLinearVelocity(0, 0)
+			self.body:setAngularVelocity(0)
+
+			return
+		end
+	end
+
+
+	local dest_heading = (Vector(move.dest) - Vector(self.loc.x(), self.loc.y())):unit()
+	local body_heading = Vector(math.cos(self.angle()), math.sin(self.angle()))
+	self.deflection = math.atan2(body_heading.x * dest_heading.y - body_heading.y * dest_heading.x,
+	                             body_heading * dest_heading)
+
+	if (math.abs(self.deflection) > math.pi / 20) then
+		self.body:applyAngularImpulse(0.1 * (self.deflection / math.abs(self.deflection)))
+	else
+		self.body:setAngularVelocity(0)
+		self.body:setAngle(self.angle() + self.deflection)
+
+		local velocity = Vector(self.body:getLinearVelocity())
+
+		if velocity:mag() == 0 then
+			self.force = dest_heading
+		else
+			self.force = dest_heading - velocity:unit()
+		end
+
+		self.force = (dest_heading + self.force:unit()):unit() * self.max_accel
+
+		self.body:applyForce(self.force.x, self.force.y)
+	end
+end

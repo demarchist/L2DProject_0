@@ -88,9 +88,9 @@ function Unit:init ( name, zone )
 
 
 	-- Allow state to be dynamically queried as a table field.
-	self.status = { unit = self }
+	self.status = { _unit = self }
 	setmetatable(self.status, {
-		__tostring = function( status ) return status.unit:get_status() end,
+		__tostring = function( status ) return status._unit:get_status() end,
 	})
 
 
@@ -111,6 +111,7 @@ function Unit.lookup ( unit )
 	    or type(unit) == 'string' and game.named_units[unit]
 	    or nil
 end
+
 
 
 --[[
