@@ -4,12 +4,14 @@
 -- =====================================================================================
 --]]
 
-require('classes.Class')
-require('classes.Vector')
-require('include.color')
+require'classes.Class'
+require'classes.Vector'
+require'include.color'
 
 
-local lg = love.graphics
+local lg = require'love.graphics'
+local font10 = lg.newFont(10)
+
 
 
 Camera = Class("Camera")
@@ -150,12 +152,11 @@ function Camera:mousereleased(x, y, button)
 						if(lActor.selected == true) then
 							local worldX, worldY = self:camPosToWorldPos(x, y)
 							if(love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')) then
-								lActor:pushPathNode(worldX,worldY)
+								lActor:append_move(Actor.line_to(worldX, worldY))
 							else
-								lActor:setObjective(worldX, worldY)
+								lActor:set_moves(Actor.line_to(worldX, worldY))
 							end
 						end
-
 					end
 				end
 			end
@@ -217,8 +218,9 @@ function Camera:render()
 				local lActor = lFixture:getUserData()
 				if(lActor ~= nil) then
 					--Force Vector
+					love.graphics.setColor(color.FIRE_ENGINE_RED)
 					lg.setColor(color.FIRE_ENGINE_RED)
-					local lForceVector = Vector:new({x = lActor.forceVector.x, y = -lActor.forceVector.y})
+					local lForceVector = Vector:new({x = lActor.force.x, y = -lActor.force.y})
 					lForceVector = (lForceVector * self.pxPerUnit) + bodyCamPos
 					lg.setLine(1, 'smooth')
 					lg.line(bodyCamPos.x, bodyCamPos.y, lForceVector.x, lForceVector.y)
@@ -226,30 +228,34 @@ function Camera:render()
 					--NameTag
 					local AABBtopLeftX, AABBtopLeftY, AABBbottomRightX, AABBbottomRightY = lShape:computeAABB( 0, 0, bodyAngle, 1 )
 					lg.setColor(color.PERIWINKLE)
-					lg.setFont(lActor.nametagFont)
-					lg.print(lActor.name, bodyCamPos.x - (lActor.nametagFont:getWidth(lActor.name) / 2),
-					                                 bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (lActor.nametagFont:getHeight() * 1.5),
-					                                 0,1,1,0,0,0,0)
+					lg.setFont(font10)
+					lg.print(lActor.name, bodyCamPos.x - (font10:getWidth(lActor.name) / 2),
+					                      bodyCamPos.y - (math.abs(AABBtopLeftY) * self.pxPerUnit) - (font10:getHeight() * 1.5),
+                                          0,1,1,0,0,0,0)
 
 					--Path to Objective
-					if(#lActor.pathToObj > 0) then
+					if lActor:current_move() then
 						--Path lines
 						lg.setColor(color.PINK)
 						lg.setLine(2, 'smooth')
 						local a = Vector:new({x = bodyCamPos.x, y = bodyCamPos.y})
-						for k, lNode in ipairs(lActor.pathToObj) do
-							local lNodeCamPos = self:worldPosToCameraPos(lNode.x, lNode.y)
-							lg.line(a.x, a.y, lNodeCamPos.x, lNodeCamPos.y)
+						for i, move in ipairs(lActor.path.moves) do
+							if i >= lActor.path.step then
+								local lNodeCamPos = self:worldPosToCameraPos(move.dest.x, move.dest.y)
+								lg.line(a.x, a.y, lNodeCamPos.x, lNodeCamPos.y)
 
-							a = lNodeCamPos
+								a = lNodeCamPos
+							end
 						end
 
 						--Path Nodes
 						lg.setColor(color.WHITE)
 						lg.setLine(2, 'smooth')
-						for k, lNode in pairs(lActor.pathToObj) do
-							local lNodeCamPos = self:worldPosToCameraPos(lNode.x, lNode.y)
-							lg.circle("fill", lNodeCamPos.x, lNodeCamPos.y, 3, 10)
+						for i, move in ipairs(lActor.path.moves) do
+							if i >= lActor.path.step then
+								local lNodeCamPos = self:worldPosToCameraPos(move.dest.x, move.dest.y)
+								lg.circle("fill", lNodeCamPos.x, lNodeCamPos.y, 3, 10)
+							end
 						end
 
 						--Direction to objPoint indicator
@@ -258,8 +264,8 @@ function Camera:render()
 							lg.setColor(color.MAROON)
 							lg.setLine(1, 'smooth')
 							lg.line(bodyCamPos.x, bodyCamPos.y,
-							                   bodyCamPos.x + (shapeRadius * math.cos(bodyAngle + lActor.objTheta)),
-							                   bodyCamPos.y - (shapeRadius * math.sin(bodyAngle + lActor.objTheta)))
+							        bodyCamPos.x + (shapeRadius * math.cos(bodyAngle + lActor.deflection)),
+							        bodyCamPos.y - (shapeRadius * math.sin(bodyAngle + lActor.deflection)))
 						end
 					end
 
