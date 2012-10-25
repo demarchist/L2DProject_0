@@ -243,7 +243,7 @@ function Actor:update ( )
 	self:expand_current_move()
 
 	-- Get the next move when the current one is completed.
-	if Vector.mag({x = move.dest.x - self.loc.x(), y = move.dest.y - self.loc.y()}) < 1 then
+	if Vector.mag({x = move.dest.x - self.loc.x(), y = move.dest.y - self.loc.y()}) < 0.5 then
 		self.path.step = self.path.step + 1
 		move = self:current_move()
 		self:expand_current_move()
@@ -262,28 +262,20 @@ function Actor:update ( )
 		end
 	end
 
+	local dest_heading = Vector(move.dest.x - self.loc.x(), move.dest.y - self.loc.y())
+	local dest_angle = math.atan2(dest_heading.y, dest_heading.x)
 
-	local dest_heading = (Vector(move.dest) - Vector(self.loc.x(), self.loc.y())):unit()
-	local body_heading = Vector(math.cos(self.angle()), math.sin(self.angle()))
-	self.deflection = math.atan2(body_heading.x * dest_heading.y - body_heading.y * dest_heading.x,
-	                             body_heading * dest_heading)
+	self.deflection = dest_angle - self.angle()
 
 	if (math.abs(self.deflection) > math.pi / 20) then
+		self.body:setLinearVelocity(0,0)
 		self.body:applyAngularImpulse(0.1 * (self.deflection / math.abs(self.deflection)))
-	else
+	else	
 		self.body:setAngularVelocity(0)
 		self.body:setAngle(self.angle() + self.deflection)
 
-		local velocity = Vector(self.body:getLinearVelocity())
+		self.force = dest_heading:unit() * self.max_accel
 
-		if velocity:mag() == 0 then
-			self.force = dest_heading
-		else
-			self.force = dest_heading - velocity:unit()
-		end
-
-		self.force = (dest_heading + self.force:unit()):unit() * self.max_accel
-
-		self.body:applyForce(self.force.x, self.force.y)
+		self.body:setLinearVelocity(self.force.x, self.force.y)
 	end
 end

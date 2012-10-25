@@ -4,55 +4,45 @@
 -- =====================================================================================
 --]]
 
-require'classes.Class'
-require'classes.Vector'
-require'include.color'
+require 'classes.Class'
+require 'classes.Vector'
+require 'include.color'
 
 
-local lg = require'love.graphics'
+local lg = require 'love.graphics'
 local font10 = lg.newFont(10)
 
 
-
-Camera = Class("Camera")
+Camera = Class("Camera", nil, {
+	targetWorld = nil,
+	pxPerUnit = 10,
+	targetEntity = nil,
+	targetCoordinates = Vector:new({x = 0, y = 0}),
+	worldAperture = {lowerBound = Vector:new({x = 0, y = 0}), upperBound = Vector:new({x = 0, y = 0})},
+	selectBox = {toggle = false, x1 = 0, y1 = 0, x2 = 0, y2 = 0}
+})
 
 function Camera:new ( init )
 	local camera = init or {}
 
-	camera.targetWorld = init.world.physicsWorld or nil
-	camera.pxPerUnit = init.pxPerUnit or 1
-	camera.targetEntity = init.targetEntity or nil
-
-	camera.targetCoordinates = Vector:new({x = 0, y = 0})
-	camera.drawDebugPrimitives = false
-
-	camera.worldAperture = {lowerBound = Vector:new({x = 0, y = 0}), upperBound = Vector:new({x = 0, y = 0})}
-	camera.selectBox = {toggle = false, x1 = 0, y1 = 0, x2 = 0, y2 = 0}
-	camera.queryFixtures = nil
-
 	Camera.super.new(self, camera)
 
-	camera:calcWorldAperture()
-
-	return(camera)
+	return camera:init()
 end
 
-function Camera:setTargetWorld(targetWorld)
-	if(targetWorld == nil) then return(false) end
-	self.targetWorld = targetWorld.physicsWorld
-	return(true)
+function Camera:init ()
+
+	self.targetWorld = self.world.physicsWorld
+
+	self:calcWorldAperture()
+
+	return self
 end
 
 function Camera:setTargetCoordinates(x, y)
 	self.targetCoordinates.x = x
 	self.targetCoordinates.y = y
 	self:calcWorldAperture()
-end
-
-function Camera:setTargetActor(targetEntity)
-	if(targetEntity == nil) then return(false) end
-	self.targetEntity = targetEntity
-	return(true)
 end
 
 function Camera:calcWorldAperture()
@@ -73,12 +63,13 @@ function Camera:worldPosToCameraPos(worldPosX, worldPosY)
 	DestR.x =  ((worldPosX - self.targetCoordinates.x) * self.pxPerUnit) + (lg.getWidth() / 2)
 	DestR.y = -((worldPosY - self.targetCoordinates.y) * self.pxPerUnit) + (lg.getHeight() / 2)
 
-	return(DestR)
+	return DestR
 end
 
 function Camera:camPosToWorldPos(camX, camY)
 	camX = self.targetCoordinates.x + ((camX - (lg.getWidth() / 2)) / self.pxPerUnit)
 	camY = self.targetCoordinates.y - ((camY - (lg.getHeight() / 2)) / self.pxPerUnit)
+
 	return camX, camY
 end
 
@@ -130,10 +121,15 @@ function Camera:mousereleased(x, y, button)
 			end
 		end
 
-		self.queryFixtures = {}
-		self.targetWorld:queryBoundingBox(lTopLeftX, lTopLeftY, lBottomRightX, lBottomRightY, self.bbQueryCallback)
+		local queryFixtures = {}
+		local function bbQueryCallback(lFixture)
+			if lFixture ~= nil then table.insert( queryFixtures, lFixture ) end
 
-		for k, lFixture in pairs(self.queryFixtures) do
+			return(true)
+		end
+		self.targetWorld:queryBoundingBox(lTopLeftX, lTopLeftY, lBottomRightX, lBottomRightY, bbQueryCallback)
+
+		for k, lFixture in pairs(queryFixtures) do
 			if(lFixture ~= nil) then
 				local lActor = lFixture:getUserData()
 				if(lActor ~= nil) then
@@ -174,10 +170,17 @@ function Camera:render()
 
 	--bound the camera
 
-	self.queryFixtures = {} --This table will be filled by the query callback function, so clear it out in advance.
-	self.targetWorld:queryBoundingBox(self.worldAperture.topLeftX, self.worldAperture.topLeftY, self.worldAperture.bottomRightX, self.worldAperture.bottomRightY, self.bbQueryCallback)
+	local queryFixtures = {}
+	local function bbQueryCallback(lFixture)
+		if lFixture ~= nil then table.insert( queryFixtures, lFixture ) end
 
-	for k, lFixture in pairs(self.queryFixtures) do
+		return(true)
+	end
+	self.targetWorld:queryBoundingBox(self.worldAperture.topLeftX, self.worldAperture.topLeftY,
+	                                  self.worldAperture.bottomRightX, self.worldAperture.bottomRightY,
+					  bbQueryCallback)
+
+	for k, lFixture in pairs(queryFixtures) do
 		if(lFixture ~= nil) then
 			local lShape = lFixture:getShape()
 			local lBody = lFixture:getBody()
@@ -307,12 +310,3 @@ function Camera:render()
 	lg.line(center_x - 10, center_y, center_x + 10, center_y)
 	lg.line(center_x, center_y - 10, center_x, center_y + 10)
 end
-
-function Camera.bbQueryCallback(lFixture)
-	if lFixture ~= nil then
-		--table.insert(self.queryFixtures,lFixture)
-		table.insert(game.cam.queryFixtures, lFixture) --I dunno about this
-	end
-	return(true)
-end
-

@@ -2,28 +2,37 @@
 	Game Class
 --]]------------------------------------------------
 
-Game = {}
+require 'classes.Class'
+require 'classes.World'
+require 'classes.Actor'
+require 'classes.Camera'
 
-function Game:new()
-	require('classes.World')
-	require('classes.Actor')
-	require('classes.Camera')
 
-	local object = {
-		actors = {}
-	}
+Game = Class("Game", nil, {
+	actors = {},
+	world = nil,
+	cam = nil
+})
 
-	object.world = World:new({name = "World_01"})
+function Game:new ( init )
+	local game = init or {}
 
-	object.cam = Camera:new({world = object.world, pxPerUnit = 10})
-	object.cam:setTargetCoordinates(0,0)
+	Game.super.new(self, game)
 
-	table.insert(object.actors,Actor:new({name = "Hero", world = object.world, loc = {x = 20, y = 20}}))
-	table.insert(object.actors,Actor:new({name = "Monster", world = object.world, loc = {x = -20, y = -20}}))
+	return game:init()
+end
 
-	setmetatable(object, { __index = Game })  -- Inheritance
+function Game:init ()
 
-	return(object)
+	self.world = World:new({name = "World_01"})
+
+	self.cam = Camera:new({world = self.world, pxPerUnit = 10})
+	self.cam:setTargetCoordinates(0,0)
+
+	table.insert(self.actors, Actor:new({name = "Hero", world = self.world, loc = {x = 20, y = 20}}))
+	table.insert(self.actors, Actor:new({name = "Monster", world = self.world, loc = {x = -20, y = -20}}))
+
+	return self
 end
 
 function Game:update(dt)
