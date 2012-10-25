@@ -403,7 +403,7 @@ function Actor:update ( )
 		self.body:applyAngularImpulse(0.1 * (self.deflection / math.abs(self.deflection)))
 	else
 		self.body:setAngularVelocity(0)
-		self.body:setAngle(self.angle() + self.deflection)
+		self.body:setAngle(dest_angle)
 
 		self.force = dest_heading:unit() * self.max_accel
 

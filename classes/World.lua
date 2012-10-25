@@ -78,7 +78,7 @@ function World:updatePathing ( radius )
 		world:rayCast(pt.x, pt.y, pt.x,        pt.y-radius, ray_cb)
 	end
 
-	self.pather = require('libraries.Jumper.init')(pathGraph, 0)
+	self.pather = require('libraries.Jumper.init')(pathGraph, 0, true, 'DIAGONAL')
 end
 
 
