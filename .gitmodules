@@ -4,3 +4,6 @@
 [submodule "libraries/loveframes"]
 	path = libraries/loveframes
 	url = https://github.com/NikolaiResokav/LoveFrames.git
+[submodule "libraries/Jumper"]
+	path = libraries/Jumper
+	url = git://github.com/Yonaba/Jumper.git

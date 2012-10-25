@@ -2,6 +2,8 @@ local lp = require'love.physics'
 
 require'classes.Class'
 require'classes.Vector'
+require'classes.World'
+require'include.color'
 
 
 Actor = Class("Actor", nil, {
@@ -103,6 +105,7 @@ end
 ====================================================================================
 --]]
 
+
 --[[
 -- ===  METHOD  ========================================================================
 --    Signature:  Actor:current_move ( ) -> table|nil
@@ -145,6 +148,52 @@ end
 
 
 --[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:expand_current_move ( ) -> nil
+--  Description:  Update this actor's move list by expanding the current move, if
+--                necessary.
+-- =====================================================================================
+--]]
+function Actor:expand_current_move ( )
+	local move = self:current_move()
+
+	if move and move.type == 'path' then
+		local x = self.path.step <= 1 and self.loc.x() or self.path.moves[self.path.step-1].dest.x
+		local y = self.path.step <= 1 and self.loc.y() or self.path.moves[self.path.step-1].dest.y
+		local path_moves = self.world:path(self.loc.x(), self.loc.y(), move.dest.x, move.dest.y) or {}
+
+		self.path.moves[self.path.step] = nil
+
+		for i, m in ipairs(path_moves) do
+			table.insert(self.path.moves, self.path.step + i - 1, Actor.line_to(m.x, m.y))
+		end
+	end
+end
+
+
+--
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:expand_all_moves ( ) -> nil
+--  Description:  Expand out this actor's move list by resolving all complex moves.
+-- =====================================================================================
+--]]
+function Actor:expand_all_moves ( )
+	local s = self.path.step
+
+
+	self.path.step = 1
+	while self:current_move() do
+		self:expand_current_move()
+		self.path.step = self.path.step + 1
+	end
+
+
+	self.path.step = s
+end
+
+
+--[[
 -- ===  CLASS FUNCTION  ================================================================
 --    Signature:  Actor.line_to ( x, y ) -> table
 --  Description:  Obtain a move describing a simple straight line from the current
@@ -158,6 +207,20 @@ function Actor.line_to ( x, y )
 	return { type = 'line', dest = { x = x, y = y } }
 end
 
+
+--[[
+-- ===  CLASS FUNCTION  ================================================================
+--    Signature:  Actor.path_to ( x, y ) -> table
+--  Description:  Obtain a move describing a world-assisted path from the current
+--                position.
+--   Parameters:  x : [number] : horizontal component of the destination point
+--                y : [number] : vertical component of the destination point
+--      Returns:  A movement description object.
+-- =====================================================================================
+--]]
+function Actor.path_to ( x, y )
+	return { type = 'path', dest = { x = x, y = y } }
+end
 
 
 --[[
@@ -173,11 +236,13 @@ function Actor:update ( )
 		return
 	end
 
+	self:expand_current_move()
 
 	-- Get the next move when the current one is completed.
 	if Vector.mag({x = move.dest.x - self.loc.x(), y = move.dest.y - self.loc.y()}) < 0.5 then
 		self.path.step = self.path.step + 1
 		move = self:current_move()
+		self:expand_current_move()
 
 		-- Stop at the end of the move list.
 		if not move then
@@ -201,7 +266,7 @@ function Actor:update ( )
 	if (math.abs(self.deflection) > math.pi / 20) then
 		self.body:setLinearVelocity(0,0)
 		self.body:applyAngularImpulse(0.1 * (self.deflection / math.abs(self.deflection)))
-	else	
+	else
 		self.body:setAngularVelocity(0)
 		self.body:setAngle(self.angle() + self.deflection)
 

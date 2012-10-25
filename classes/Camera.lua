@@ -160,9 +160,9 @@ function Camera:mousereleased(x, y, button)
 						if(lActor.selected == true) then
 							local worldX, worldY = self:camPosToWorldPos(x, y)
 							if(love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')) then
-								lActor:append_move(Actor.line_to(worldX, worldY))
+								lActor:append_move(Actor.path_to(worldX, worldY))
 							else
-								lActor:set_moves(Actor.line_to(worldX, worldY))
+								lActor:set_moves(Actor.path_to(worldX, worldY))
 							end
 						end
 					end
