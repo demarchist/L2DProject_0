@@ -160,12 +160,7 @@ function Actor:expand_current_move ( )
 	if move and move.type == 'path' then
 		local x = self.path.step <= 1 and self.loc.x() or self.path.moves[self.path.step-1].dest.x
 		local y = self.path.step <= 1 and self.loc.y() or self.path.moves[self.path.step-1].dest.y
-
 		local path_moves = self.world:path(self.loc.x(), self.loc.y(), move.dest.x, move.dest.y) or {}
-
-		for _, p in ipairs(path_moves) do
-			p.x = p.x + (math.random() - 0.5) / 20  -- Jitter to prevent absolutely vertical movement.
-		end
 
 		self.path.moves[self.path.step] = nil
 
@@ -192,6 +187,7 @@ function Actor:expand_all_moves ( )
 		self:expand_current_move()
 		self.path.step = self.path.step + 1
 	end
+
 
 	self.path.step = s
 end
@@ -270,7 +266,7 @@ function Actor:update ( )
 	if (math.abs(self.deflection) > math.pi / 20) then
 		self.body:setLinearVelocity(0,0)
 		self.body:applyAngularImpulse(0.1 * (self.deflection / math.abs(self.deflection)))
-	else	
+	else
 		self.body:setAngularVelocity(0)
 		self.body:setAngle(self.angle() + self.deflection)
 

@@ -8,6 +8,9 @@ require 'classes.Actor'
 require 'classes.Camera'
 
 
+local path_debug = false  -- Set 'true' to draw the path map on-screen.
+
+
 Game = Class("Game", nil, {
 	actors = {},
 	world = nil,
@@ -45,7 +48,34 @@ function Game:update(dt)
 	self.cam:update(dt)
 end
 
+
+function Game:draw_path_map ( )
+	if not self.path_canvas then
+		local grid = self.world.pather:getGrid()
+
+		self.path_canvas = love.graphics.newCanvas()
+		love.graphics.setCanvas(self.path_canvas)
+		love.graphics.setColor(color.FIRE_ENGINE_RED)
+
+		for _, p in ipairs(self.world.mapGraph) do
+			point = self.cam:worldPosToCameraPos(p.x, p.y)
+			if not grid:isWalkableAt(p.x, p.y) then
+				love.graphics.circle('fill', point.x, point.y, 5)
+			end
+		end
+
+		love.graphics.setCanvas()
+	end
+
+	love.graphics.draw(self.path_canvas)
+end
+
+
 function Game:drawWorld()
+	if path_debug then
+		self:draw_path_map()
+	end
+
 	self.cam:render()
 end
 

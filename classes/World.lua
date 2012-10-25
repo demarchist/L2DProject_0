@@ -37,35 +37,38 @@ function World:init ()
 end
 
 
-function World:updatePathing()
+function World:updatePathing ( radius )
 	local pathGraph = self.pathGraph
+	radius = radius or 1
 
 	for _, pt in ipairs(self.mapGraph) do
 		pathGraph[pt.x] = pathGraph[pt.x] or {}
 		pathGraph[pt.x][pt.y] = pathGraph[pt.x][pt.y] or 0
+	end
 
-
+	for _, pt in ipairs(self.mapGraph) do
 		local function ray_cb()
-			pathGraph[pt.x][pt.y] = 1
+			pathGraph[pt.y][pt.x] = 1
 			return 0
 		end
 
 		local world = self.physicsWorld
-		world:rayCast(pt.x, pt.y, pt.x+1, pt.y, ray_cb)
-		world:rayCast(pt.x, pt.y, pt.x,   pt.y+1, ray_cb)
+		world:rayCast(pt.x, pt.y, pt.x+radius, pt.y       , ray_cb)
+		world:rayCast(pt.x, pt.y, pt.x,        pt.y+radius, ray_cb)
+		world:rayCast(pt.x, pt.y, pt.x-radius, pt.y       , ray_cb)
+		world:rayCast(pt.x, pt.y, pt.x,        pt.y-radius, ray_cb)
 	end
 
 	self.pather = require('libraries.Jumper.init')(pathGraph, 0)
 end
 
 
-function World:path(x1, y1, x2, y2)
+function World:path ( x1, y1, x2, y2 )
 	local floor = math.floor
-	return self.pather:getPath(floor(x1), floor(y1), floor(x2), floor(y2))
-end
 
-function World:update(dt)
-	self.physicsWorld:update(dt)
+	if self.pather then
+		return self.pather:getPath(floor(x1), floor(y1), floor(x2), floor(y2))
+	end
 end
 
 function World:findPath(start, goal)
