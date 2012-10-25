@@ -4,12 +4,12 @@
 -- =====================================================================================
 --]]
 
-require'classes.Class'
-require'classes.Vector'
-require'include.color'
+require 'classes.Class'
+require 'classes.Vector'
+require 'include.color'
 
 
-local lg = require'love.graphics'
+local lg = require 'love.graphics'
 local font10 = lg.newFont(10)
 
 
@@ -39,22 +39,10 @@ function Camera:init ()
 	return self
 end
 
-function Camera:setTargetWorld(targetWorld)
-	if(targetWorld == nil) then return(false) end
-	self.targetWorld = targetWorld.physicsWorld
-	return(true)
-end
-
 function Camera:setTargetCoordinates(x, y)
 	self.targetCoordinates.x = x
 	self.targetCoordinates.y = y
 	self:calcWorldAperture()
-end
-
-function Camera:setTargetActor(targetEntity)
-	if(targetEntity == nil) then return(false) end
-	self.targetEntity = targetEntity
-	return(true)
 end
 
 function Camera:calcWorldAperture()
@@ -75,12 +63,13 @@ function Camera:worldPosToCameraPos(worldPosX, worldPosY)
 	DestR.x =  ((worldPosX - self.targetCoordinates.x) * self.pxPerUnit) + (lg.getWidth() / 2)
 	DestR.y = -((worldPosY - self.targetCoordinates.y) * self.pxPerUnit) + (lg.getHeight() / 2)
 
-	return(DestR)
+	return DestR
 end
 
 function Camera:camPosToWorldPos(camX, camY)
 	camX = self.targetCoordinates.x + ((camX - (lg.getWidth() / 2)) / self.pxPerUnit)
 	camY = self.targetCoordinates.y - ((camY - (lg.getHeight() / 2)) / self.pxPerUnit)
+
 	return camX, camY
 end
 

@@ -2,7 +2,7 @@ function love.load()
 	require('libraries.loveframes.init')
 	require('classes.Game')
 
-	love.graphics.setCaption("Adam's LOVE2D Project")
+	love.graphics.setCaption("L2DProject_0")
 	love.graphics.setMode(800,600,false,false,0)
 	love.graphics.setBackgroundColor(120,134,107)
 

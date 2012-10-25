@@ -7,7 +7,8 @@ require('classes.Vector')
 
 World = Class("World", nil, {
 	name         = "_unnamed_world",
-	physicsWorld = nil
+	physicsWorld = nil,
+	mapGraph = {}
 })
 
 function World:new ( init )
@@ -23,7 +24,6 @@ function World:init ()
 	self.physicsWorld = love.physics.newWorld(0,0,true)
 	love.physics.setMeter(1) --This may be the default value
 
-	self.mapGraph = {}
 	for x = -100, 100, 1 do for y = -100, 100, 1 do table.insert(self.mapGraph, Vector:new({x = x, y = y})) end end
 
 	self.envBody = love.physics.newBody(self.physicsWorld, 0, 0, 'static')
