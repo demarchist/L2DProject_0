@@ -18,7 +18,7 @@ Unit = Class("Unit", Actor, {
 	zone    = nil,
 	loc     = { x = 0, y = 0 },  -- Relative to 'zone'.
 	targets = {},
-	status  = "",                -- Dynamically generated on field access.
+	status  = 'normal',          -- Dynamically generated on field access.
 })
 
 

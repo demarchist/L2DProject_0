@@ -22,6 +22,7 @@ Camera = Class("Camera", nil, {
 	selectBox = {toggle = false, x1 = 0, y1 = 0, x2 = 0, y2 = 0}
 })
 
+
 function Camera:new ( init )
 	local camera = init or {}
 
@@ -30,8 +31,8 @@ function Camera:new ( init )
 	return camera:init()
 end
 
-function Camera:init ()
 
+function Camera:init ()
 	self.targetWorld = self.world.physicsWorld
 
 	self:calcWorldAperture()
@@ -39,23 +40,29 @@ function Camera:init ()
 	return self
 end
 
+
 function Camera:setTargetCoordinates(x, y)
 	self.targetCoordinates.x = x
 	self.targetCoordinates.y = y
 	self:calcWorldAperture()
 end
 
+
 function Camera:calcWorldAperture()
-	if(lg.isCreated() == false) then return(false) end
-	if(self.worldAperture == nil) then return(false) end
-	if(self.pxPerUnit <= 0) then return(false) end
+	local aperture = self.worldAperture
 
-	self.worldAperture.topLeftX = (self.targetCoordinates.x - ((lg.getWidth() / 2) * (1 / self.pxPerUnit)))
-	self.worldAperture.topLeftY =  (self.targetCoordinates.y - ((lg.getHeight() / 2) * (1 / self.pxPerUnit)))
+	if not lg.isCreated() or not aperture or self.pxPerUnit <= 0 then return false end
 
-	self.worldAperture.bottomRightX = (self.targetCoordinates.x + ((lg.getWidth() / 2) * (1 / self.pxPerUnit)))
-	self.worldAperture.bottomRightY = (self.targetCoordinates.y + ((lg.getHeight() / 2) * (1 / self.pxPerUnit)))
+	local view_width = lg.getWidth() / self.pxPerUnit
+	local view_height = lg.getHeight() / self.pxPerUnit
+
+	aperture.topLeftX = self.targetCoordinates.x - view_width/2
+	aperture.topLeftY = self.targetCoordinates.y - view_height/2
+
+	aperture.bottomRightX = self.targetCoordinates.x + view_width/2
+	aperture.bottomRightY = self.targetCoordinates.y + view_height/2
 end
+
 
 function Camera:worldPosToCameraPos(worldPosX, worldPosY)
 	local DestR = Vector:new({x = 0, y = 0})
@@ -66,12 +73,14 @@ function Camera:worldPosToCameraPos(worldPosX, worldPosY)
 	return DestR
 end
 
+
 function Camera:camPosToWorldPos(camX, camY)
 	camX = self.targetCoordinates.x + ((camX - (lg.getWidth() / 2)) / self.pxPerUnit)
 	camY = self.targetCoordinates.y - ((camY - (lg.getHeight() / 2)) / self.pxPerUnit)
 
 	return camX, camY
 end
+
 
 function Camera:update(dt)
 	if(self.selectBox.toggle == true) then
@@ -81,6 +90,7 @@ function Camera:update(dt)
 		end
 	end
 end
+
 
 function Camera:mousepressed(x, y, button)
 	if(button == 'l') then
@@ -98,6 +108,7 @@ function Camera:mousepressed(x, y, button)
 	end
 end
 
+
 function Camera:mousereleased(x, y, button)
 
 	if(button == "l") then
@@ -105,11 +116,12 @@ function Camera:mousereleased(x, y, button)
 		self.selectBox.x2 = x
 		self.selectBox.y2 = y
 
-		local lTopLeftX, lTopLeftY = self:camPosToWorldPos(math.min(self.selectBox.x1, self.selectBox.x2), math.max(self.selectBox.y1,self.selectBox.y2))
-		local lBottomRightX, lBottomRightY = self:camPosToWorldPos(math.max(self.selectBox.x1, self.selectBox.x2), math.min(self.selectBox.y1,self.selectBox.y2))
+		local lTopLeftX, lTopLeftY = self:camPosToWorldPos(math.min(self.selectBox.x1, self.selectBox.x2),
+		                                                   math.max(self.selectBox.y1, self.selectBox.y2))
+		local lBottomRightX, lBottomRightY = self:camPosToWorldPos(math.max(self.selectBox.x1, self.selectBox.x2),
+		                                                           math.min(self.selectBox.y1, self.selectBox.y2))
 
-		local lBodies = self.targetWorld:getBodyList()
-		for k, lBody in pairs(lBodies) do
+		for k, lBody in pairs(self.targetWorld:getBodyList()) do
 			if(lBody ~= nil) then
 				local lFixtures = lBody:getFixtureList()
 				for i, lFixture in pairs(lFixtures) do
@@ -160,6 +172,7 @@ function Camera:mousereleased(x, y, button)
 	end
 end
 
+
 function Camera:render()
 	if(self.targetEntity ~= nil) then
 		local bodyWorldPos = Vector:new({x = self.targetEntity:getBody():getX(), y = self.targetEntity:getBody():getY()})
@@ -178,7 +191,7 @@ function Camera:render()
 	end
 	self.targetWorld:queryBoundingBox(self.worldAperture.topLeftX, self.worldAperture.topLeftY,
 	                                  self.worldAperture.bottomRightX, self.worldAperture.bottomRightY,
-					  bbQueryCallback)
+	                                  bbQueryCallback)
 
 	for k, lFixture in pairs(queryFixtures) do
 		if(lFixture ~= nil) then
