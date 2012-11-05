@@ -1,12 +1,6 @@
---[[
--- ===  METHOD  ========================================================================
---    Camera Class
--- =====================================================================================
---]]
-
-require 'classes.Class'
-require 'classes.Vector'
-require 'include.color'
+require'classes.Class'
+require'classes.Vector'
+require'include.color'
 
 
 local lg = require 'love.graphics'
@@ -14,26 +8,20 @@ local font10 = lg.newFont(10)
 
 
 Camera = Class("Camera", nil, {
-	targetWorld = nil,
-	pxPerUnit = 10,
+	targetWorld  = nil,
 	targetEntity = nil,
+	selectBox    = { toggle = false, x1 = 0, y1 = 0, x2 = 0, y2 = 0 },
+	scale        = 1,
+	center       = { x = 0, y = 0 },
+
+	pxPerUnit = 10,
 	targetCoordinates = Vector:new({x = 0, y = 0}),
 	worldAperture = {lowerBound = Vector:new({x = 0, y = 0}), upperBound = Vector:new({x = 0, y = 0})},
-	selectBox = {toggle = false, x1 = 0, y1 = 0, x2 = 0, y2 = 0}
 })
 
 
-function Camera:new ( init )
-	local camera = init or {}
-
-	Camera.super.new(self, camera)
-
-	return camera:init()
-end
-
-
 function Camera:init ()
-	self.targetWorld = self.world.physicsWorld
+	self.targetWorld = self.world.physics
 
 	self:calcWorldAperture()
 

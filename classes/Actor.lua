@@ -34,24 +34,6 @@ Actor = Class("Actor", nil, {
   Class utility.
 ====================================================================================
 --]]
-
---[[
--- ===  CONSTRUCTOR  ===================================================================
---    Signature:  Actor:new ( [init] ) -> table
---  Description:  Instantiate a new actor object.
---   Parameters:  init : [table] : object containing initial parameters
---      Returns:  New Actor object table (in 'init', if provided).
--- =====================================================================================
---]]
-function Actor:new ( init )
-	local actor = init or {}
-
-	Actor.super.new(self, actor)
-
-	return actor:init()
-end
-
-
 --[[
 -- ===  METHOD  ========================================================================
 --    Signature:  Actor:init ( ) -> table
@@ -60,8 +42,14 @@ end
 -- =====================================================================================
 --]]
 function Actor:init ( )
-	if self.world and self.world.physicsWorld then
-		self.body = lp.newBody(self.world.physicsWorld, nil, nil, 'dynamic')
+	self.world = self.zone
+
+	while self.world.parent and not self.world.physics do
+		self.world = self.zone.parent
+	end
+
+	if self.world and self.world.physics then
+		self.body = lp.newBody(self.world.physics, nil, nil, 'dynamic')
 
 		if type(self.loc.x) == 'number' then
 			self.body:setX(self.loc.x)
@@ -201,7 +189,7 @@ function Actor:expand_move_at_step ( step )
 				local m2 = self.path.moves[step + s - 2].dest
 				local clear = true
 
-				self.world.physicsWorld:rayCast(m2.x, m2.y, m.x, m.y, function() clear = false; return 0 end)
+				self.world.physics:rayCast(m2.x, m2.y, m.x, m.y, function() clear = false; return 0 end)
 
 				if clear then
 					s = s - 1

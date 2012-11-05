@@ -28,27 +28,6 @@ Unit = Class("Unit", Actor, {
   Class utility.
 ====================================================================================
 --]]
-
---[[
--- ===  CONSTRUCTOR  ===================================================================
---    Signature:  Unit:new ( [init] ) -> table
---  Description:  Instantiate a unit object.  Calls Unit:init() to register the unit
---                in the game environment.
---   Parameters:  init : [table] : object containing initial parameters
---      Returns:  New Unit object table (in 'init', if provided).
--- =====================================================================================
---]]
-function Unit:new ( init )
-	local unit = init or {}
-
-
-	Unit.super.new(self, unit)
-
-
-	return unit:init()
-end
-
-
 --[[
 -- ===  METHOD  ========================================================================
 --    Signature:  Unit:init ( [name, zone] ) -> table
@@ -62,7 +41,7 @@ function Unit:init ( name, zone )
 	-- Register the unit in the game unit tables.
 	name = name or self.name
 
-	if name:byte() ~= string.byte('_') then
+	if name:sub(1, 1) ~= '_' then
 		game.named_units[name] = self
 	end
 

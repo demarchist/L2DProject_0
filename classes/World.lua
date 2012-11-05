@@ -2,95 +2,79 @@ local lp = require'love.physics'
 
 require'classes.Class'
 require'classes.Vector'
+require'classes.Zone'
 
 
-World = Class("World", nil, {
-	name         = "_unnamed_world",
-	physicsWorld = nil,
-	mapGraph     = {},
+World = Class("World", Zone, {
+	physics = nil,
+	pathers = nil,
 })
 
 
-function World:new ( init )
-	local world = init or {}
-
-	World.super.new(self, world)
-
-	return world:init()
-end
-
-
-local env_shape = {
-	-15, -15,
-	-15, -10,
-	  3, -10,
-	  3,  10,
-	 10,  10,
-	 10,  30,
-	-10,  30,
-	-10,  10,
-	 -3,  10,
-	 -3,  -4,
-	-21,  -4,
-	-21, -15,
-}
-
 function World:init ( )
-	self.physicsWorld = lp.newWorld()
+	self.physics = lp.newWorld()
 	lp.setMeter(1)
 
 
-	for x = -100, 100, 1 do for y = -100, 100, 1 do table.insert(self.mapGraph, Vector(x, y)) end end
+	self.map_graph = {}
+	for x = -math.floor(self.size.w/2), math.floor(self.size.w/2), 1 do
+		for y = -math.floor(self.size.h/2), math.floor(self.size.h/2), 1 do
+			table.insert(self.map_graph, {x = x, y = y})
+		end
+	end
 
 
-	self.envBody = lp.newBody(self.physicsWorld, 0, 0, 'static')
-	self.envShape = lp.newChainShape(false, unpack(env_shape))
-	self.envFixture = lp.newFixture(self.envBody, self.envShape, 1)
-
-
-	self.pathGraph = {}
-	self:updatePathing()
+	self.pathers = {}
+	self.path_graphs = {}
 
 
 	return self
 end
 
 
-function World:updatePathing ( radius )
-	local pathGraph = self.pathGraph
+function World:update_pathing ( radius )
 	radius = radius or 1
+	self.path_graphs[radius] = self.path_graphs[radius] or {}
 
-	for _, pt in ipairs(self.mapGraph) do
-		pathGraph[pt.x] = pathGraph[pt.x] or {}
-		pathGraph[pt.x][pt.y] = pathGraph[pt.x][pt.y] or 0
+	local path_graph = self.path_graphs[radius]
+	local physics = self.physics
+
+
+	for _, pt in ipairs(self.map_graph) do
+		path_graph[pt.x] = path_graph[pt.x] or {}
+		path_graph[pt.x][pt.y] = path_graph[pt.x][pt.y] or 0
 	end
 
-	for _, pt in ipairs(self.mapGraph) do
+	for _, pt in ipairs(self.map_graph) do
 		local function ray_cb()
-			pathGraph[pt.y][pt.x] = 1
+			path_graph[pt.y][pt.x] = 1
 			return 0
 		end
 
-		local world = self.physicsWorld
-		world:rayCast(pt.x, pt.y, pt.x+radius, pt.y       , ray_cb)
-		world:rayCast(pt.x, pt.y, pt.x,        pt.y+radius, ray_cb)
-		world:rayCast(pt.x, pt.y, pt.x-radius, pt.y       , ray_cb)
-		world:rayCast(pt.x, pt.y, pt.x,        pt.y-radius, ray_cb)
+		physics:rayCast(pt.x, pt.y, pt.x+radius, pt.y       , ray_cb)
+		physics:rayCast(pt.x, pt.y, pt.x,        pt.y+radius, ray_cb)
+		physics:rayCast(pt.x, pt.y, pt.x-radius, pt.y       , ray_cb)
+		physics:rayCast(pt.x, pt.y, pt.x,        pt.y-radius, ray_cb)
 	end
 
-	self.pather = require('libraries.Jumper.init')(pathGraph, 0, true, 'DIAGONAL')
+	self.pathers[radius] = require'libraries.Jumper.init'(path_graph, 0, true, 'EUCLIDIAN')
+
+
+	return self.pathers[radius]
 end
 
 
-function World:path ( x1, y1, x2, y2 )
-	local floor = math.floor
+function World:path ( x1, y1, x2, y2, radius )
+	radius = radius or 1
 
-	if self.pather then
-		return self.pather:getPath(floor(x1), floor(y1), floor(x2), floor(y2))
-	end
+	local floor = math.floor
+	local pather = self.pathers[radius] or self:update_pathing(radius)
+
+
+	return pather:getPath(floor(x1), floor(y1), floor(x2), floor(y2))
 end
 
 
 function World:update ( dt )
-	self.physicsWorld:update(dt)
+	self.physics:update(dt)
 end

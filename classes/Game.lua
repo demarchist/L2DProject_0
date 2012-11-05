@@ -1,64 +1,88 @@
---[[------------------------------------------------
-	Game Class
---]]------------------------------------------------
+local lp = love.physics
 
-require 'classes.Class'
-require 'classes.World'
-require 'classes.Actor'
-require 'classes.Camera'
+require'classes.Class'
+require'classes.World'
+require'classes.Unit'
+require'classes.Camera'
 
 
 local path_debug = false  -- Set 'true' to draw the path map on-screen.
 
 
 Game = Class("Game", nil, {
-	actors = {},
+	units = {},
 	world = nil,
-	cam = nil
+	cam   = nil
 })
 
-function Game:new ( init )
-	local game = init or {}
-
-	Game.super.new(self, game)
-
-	return game:init()
-end
 
 function Game:init ()
+	self.world = World:new({
+		name = "World_01",
+		size = { w = 200, h = 200 },
+	})
 
-	self.world = World:new({name = "World_01"})
+
+	self.envBody = lp.newBody(self.world.physics, 0, 0, 'static')
+	self.envShape = lp.newChainShape(false,
+		-15, -15,
+		-15, -10,
+		  3, -10,
+		  3,  10,
+		 10,  10,
+		 10,  30,
+		-10,  30,
+		-10,  10,
+		 -3,  10,
+		 -3,  -4,
+		-21,  -4,
+		-21, -15
+	)
+	self.envFixture = lp.newFixture(self.envBody, self.envShape, 1)
+
+	self.world:update_pathing(1)
+
 
 	self.cam = Camera:new({world = self.world, pxPerUnit = 10})
 	self.cam:setTargetCoordinates(0,0)
 
-	table.insert(self.actors, Actor:new({name = "Hero", world = self.world, loc = {x = 20, y = 20}}))
-	table.insert(self.actors, Actor:new({name = "Monster", world = self.world, loc = {x = -20, y = -20}}))
+
+	table.insert(self.units, Unit:new({name = "Hero", zone = self.world, loc = {x = 20, y = 20}}))
+	table.insert(self.units, Unit:new({name = "Monster", zone = self.world, loc = {x = -20, y = -20}}))
 
 	return self
 end
 
+
 function Game:update(dt)
 	self.world:update(dt)
 
-	for k, lActor in pairs(self.actors) do
-		lActor:update()
+	for _, unit in pairs(self.units) do
+		unit:update(dt)
 	end
 
 	self.cam:update(dt)
 end
 
 
-function Game:draw_path_map ( )
-	if not self.path_canvas then
-		local grid = self.world.pather:getGrid()
+function Game:draw_path_map ( radius )
+	radius = radius or 1
 
+	local pather = self.world.pathers[radius]
+
+
+	if not self.path_canvas or self.path_canvas_radius ~= radius then
+		local grid = self.world.pathers[radius]:getGrid()
+
+		self.path_canvas_radius = radius
 		self.path_canvas = love.graphics.newCanvas()
+
 		love.graphics.setCanvas(self.path_canvas)
 		love.graphics.setColor(color.FIRE_ENGINE_RED)
 
-		for _, p in ipairs(self.world.mapGraph) do
-			point = self.cam:worldPosToCameraPos(p.x, p.y)
+		for _, p in ipairs(self.world.map_graph) do
+			local point = self.cam:worldPosToCameraPos(p.x, p.y)
+
 			if not grid:isWalkableAt(p.x, p.y) then
 				love.graphics.circle('fill', point.x, point.y, 5)
 			end
@@ -79,14 +103,17 @@ function Game:drawWorld()
 	self.cam:render()
 end
 
+
 function Game:mousepressed(x, y, button)
 	-- https://love2d.org/wiki/MouseConstant
 	self.cam:mousepressed(x, y, button)
 end
 
+
 function Game:mousereleased(x, y, button)
 	self.cam:mousereleased(x, y, button)
 end
+
 
 function Game:keypressed(key, unicode)
 	-- https://love2d.org/wiki/KeyConstant
@@ -104,6 +131,7 @@ function Game:keypressed(key, unicode)
 		love.event.push("quit")   -- actually causes the app to quit
 	end
 end
+
 
 function Game:keyreleased(key, unicode)
 end

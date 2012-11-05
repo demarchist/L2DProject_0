@@ -1,4 +1,4 @@
-require'classes/Class'
+require'classes.Class'
 
 
 game.zones = {}
@@ -6,32 +6,13 @@ game.named_zones = {}
 
 
 Zone = Class("Zone", nil, {
-	name   = "_unnamed_zone",       -- Zone names beginning with an underscore
-	parent = nil,                   --            are not globally registered.
-	size   = { w = 100, h = 100 },
-	loc    = { x = 0, y = 0 },      -- Relative to parent.
-	units  = {},
+	name      = "_unnamed_zone",       -- Zone names beginning with an underscore
+	parent    = nil,                   --            are not globally registered.
+	transform = {},                    -- Parent-relative transform matrix.
+	size      = { w = 100, h = 100 },
+	loc       = { x = 0, y = 0 },      -- Relative to parent.
+	units     = {},
 })
-
-
---[[
--- ===  CONSTRUCTOR  ===================================================================
---    Signature:  Zone:new ( [init] ) -> table
---  Description:  Instantiate a zone object.  Calls Zone:init() to register the zone
---                in the game environment.
---   Parameters:  init : [table] : object containing initial parameters
---      Returns:  New Zone object table (in 'init', if provided).
--- =====================================================================================
---]]
-function Zone:new ( init )
-	local zone = init or {}
-
-
-	Zone.super.new(self, zone)
-
-
-	return zone:init()
-end
 
 
 --[[
@@ -46,12 +27,11 @@ function Zone:init ( name )
 	-- Register the zone in the game zone tables.
 	name = name or self.name
 
-	if name:byte() ~= string.byte('_') then
+	if string.sub(name, 1, 1) ~= '_' then
 		game.named_zones[name] = self
 	end
 
 	game.zones[self] = name
-
 
 	return self
 end
@@ -68,11 +48,9 @@ end
 function Zone:add_unit ( unit )
 	unit = Unit.lookup(unit)
 
-
 	if unit then
 		self.units[unit] = unit.loc
 	end
-
 
 	return self
 end
@@ -89,11 +67,9 @@ end
 function Zone:remove_unit ( unit )
 	unit = Unit.lookup(unit)
 
-
 	if unit then
 		self.units[unit] = nil
 	end
-
 
 	return unit
 end
@@ -110,7 +86,6 @@ function Zone:remove_all_units ( )
 	for unit in pairs(self.units) do
 		self.units[unit] = nil
 	end
-
 
 	return self
 end

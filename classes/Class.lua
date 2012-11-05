@@ -4,9 +4,22 @@ Object = {
 	class = nil,
 	super = nil,
 
-	new   = function ( self, init )
+	new   = function ( self, init, ... )
 		init = init or {}
-		return setmetatable(init, {__index = self})
+
+		if not getmetatable(init) then
+			setmetatable(init, {__index = self})
+		end
+
+		if self.super then
+			self.super:new(init, ...)
+		end
+
+		if self.init then
+			self.init(init, ...)
+		end
+
+		return init
 	end,
 
 	is_a  = function ( self, class )
