@@ -57,18 +57,19 @@ end
 function Zone:push ( )
 	local z = self
 
-	if not z.world then
-		return error("Zone:push() error [No World associated with this Zone.].")
-	end
-
 	lg.push()
 
-	while z ~= self.world do
+	while z and not is_a(z, World) do
 		lg.scale(z.scale.x, z.scale.y)
 		lg.rotate(z.rotation)
 		lg.translate(z.center.x, z.center.y)
 
 		z = z.parent
+	end
+
+	if not z then
+		lg.pop()
+		return error("Zone:push() error [No World associated with this Zone.].")
 	end
 end
 

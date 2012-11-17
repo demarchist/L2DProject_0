@@ -118,10 +118,7 @@ end
 -- =====================================================================================
 --]]
 function Body:draw_start ( )
-	local z = self.zone
-
-	lg.push()
-
+	self.zone:push()
 end
 
 
@@ -147,7 +144,7 @@ end
 function Body:draw ( )
 	self:draw_start()
 
-	self.draw_funcs[self.lp.shape:getType()](self.lp.shape, self.position.loc, self.position.angle)
+	self.draw_funcs[self.lp.shape:getType()](self, self.lp.shape, self.position.loc, self.position.angle)
 
 	-- Velocity vector.
 	local velocity = Vector(self.lp.body:getLinearVelocity())
@@ -169,7 +166,7 @@ end
 -- Table of drawing functions.
 Body.draw_funcs = {
 
-	circle = function(shape, loc, angle)
+	circle = function(self, shape, loc, angle)
 		local r = shape:getRadius()
 
 		lg.setColor(color.TAN); lg.setLine(2, 'smooth')
@@ -178,11 +175,11 @@ Body.draw_funcs = {
 	end,
 
 
-	polygon = function(shape, loc, angle)
+	polygon = function(self, shape, loc, angle)
 	end,
 
 
-	edge = function(shape)
+	edge = function(self, shape)
 		local a = Vector()
 		local b = Vector()
 
@@ -196,7 +193,7 @@ Body.draw_funcs = {
 	end,
 
 
-	chain = function(shape)
+	chain = function(self, shape)
 		lg.setColor(color.DARK_GRAY); lg.setLine(4, 'smooth')
 
 		local a = Vector.transform(shape:getPoint(1), self.world, self.zone)
