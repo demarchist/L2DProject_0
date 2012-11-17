@@ -1,30 +1,30 @@
 local lp = require'love.physics'
+local lg = require'love.graphics'
+local color = require'include.color'
 
 require'classes.Class'
+require'classes.Body'
 require'classes.Vector'
 require'classes.World'
 require'include.color'
 
 
-Actor = Class("Actor", nil, {
+local font10 = lg.newFont(10)
+
+
+Actor = Class("Actor", Body, {
 	name         = "_unnamed_actor",
-	body         = nil,
-	world        = nil,
-	max_velocity = 3,      -- m/s
-	max_accel    = 2,      -- m/s^2
+	max_velocity = 3,  -- m/s
+	max_accel    = 2,  -- m/s^2
 	selected     = false,
 	force        = Vector(),
 	path         = { step = 0, moves = {} },
 
-
 	-- Read-only.
-	deflection   = 0,      -- Radians.  Difference between current and desired headings.
+	deflection   = 0,  -- Radians.  Difference between current and desired headings.
 
-
-	-- The following are input as values on construction,
-	-- but must be retrieved as function calls (e.g. actor.loc.x()).
-	angle        = 0,
-	loc          = { x = 0, y = 0 },  -- World coordinates.
+	-- Superclass properties.
+	lp           = { type = 'dynamic' },
 })
 
 
@@ -34,6 +34,7 @@ Actor = Class("Actor", nil, {
   Class utility.
 ====================================================================================
 --]]
+
 --[[
 -- ===  METHOD  ========================================================================
 --    Signature:  Actor:init ( ) -> table
@@ -42,45 +43,9 @@ Actor = Class("Actor", nil, {
 -- =====================================================================================
 --]]
 function Actor:init ( )
-	self.world = self.zone
-
-	while self.world.parent and not self.world.physics do
-		self.world = self.zone.parent
-	end
-
-	if self.world and self.world.physics then
-		self.body = lp.newBody(self.world.physics, nil, nil, 'dynamic')
-
-		if type(self.loc.x) == 'number' then
-			self.body:setX(self.loc.x)
-		end
-		self.loc.x = function() return self.body:getX() end
-
-		if type(self.loc.y) == 'number' then
-			self.body:setY(self.loc.y)
-		end
-		self.loc.y = function() return self.body:getY() end
-
-		if type(self.angle) == 'number' then
-			self.body:setAngle(self.angle)
-		end
-		self.angle = function() return self.body:getAngle() end
-
-		self.body:isFixedRotation(false)
-
-
-		local shape = lp.newCircleShape(1)
-
-		local fixture = lp.newFixture(self.body, shape, 1)
-		fixture:setUserData(self)
-		fixture:setRestitution(0.9)
-		fixture:setDensity(25.5)  -- kg/m^2
-	end
-
-
+	self.lp.body:isFixedRotation(false)
 	self.path  = { step = 0, moves = {} }
 	self.force = Vector()
-
 
 	return self
 end
@@ -92,7 +57,6 @@ end
   Pathing and maneuvering.
 ====================================================================================
 --]]
-
 
 --[[
 -- ===  METHOD  ========================================================================
@@ -175,9 +139,8 @@ function Actor:expand_move_at_step ( step )
 	local move = self.path.moves[step]
 
 	if move and move.type == 'path' then
-		local x = step <= 1 and self.loc.x() or self.path.moves[step-1].dest.x
-		local y = step <= 1 and self.loc.y() or self.path.moves[step-1].dest.y
-		local path_moves = self.world:path(self.loc.x(), self.loc.y(), move.dest.x, move.dest.y) or {}
+		local pos = step <= 1 and self.position.loc.object or self.path.moves[step-1].dest
+		local path_moves = self.world:path(pos, move.dest:transform(self.zone, self.world)) or {}
 
 		self.path.moves[step] = nil
 
@@ -187,18 +150,17 @@ function Actor:expand_move_at_step ( step )
 
 			if i > 1 and step + s > 2 then
 				local m2 = self.path.moves[step + s - 2].dest
-				local clear = true
+				local skippable = true
 
-				self.world.physics:rayCast(m2.x, m2.y, m.x, m.y, function() clear = false; return 0 end)
+				self.world.physics:rayCast(m2.x, m2.y, m.x, m.y, function() skippable = false; return 0 end)
 
-				if clear then
+				if skippable then
 					s = s - 1
-					local dest = self.path.moves[step + s].dest
 					table.remove(self.path.moves, step + s)
 				end
 			end
 
-			table.insert(self.path.moves, step + s, self.line_to(m.x, m.y))
+			table.insert(self.path.moves, step + s, self.line_to(m:transform(self.world, self.zone)))
 			s = s + 1
 		end
 	end
@@ -251,33 +213,32 @@ end
 
 
 --[[
--- ===  CLASS FUNCTION  ================================================================
---    Signature:  Actor.line_to ( x, y ) -> table
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:line_to ( x, y ) -> table
 --  Description:  Obtain a move describing a simple straight line from the current
 --                position.
---   Parameters:  x : [number] : horizontal component of the destination point
---                y : [number] : vertical component of the destination point
+--   Parameters:  position : [table] : Vector-like location representing the destination
 --      Returns:  A movement description object.
 -- =====================================================================================
 --]]
-function Actor.line_to ( x, y )
-	return { type = 'line', dest = { x = x, y = y } }
+function Actor:line_to ( position )
+	return { type = 'line', dest = position }
 end
 
 
 --[[
--- ===  CLASS FUNCTION  ================================================================
---    Signature:  Actor.path_to ( x, y ) -> table
+-- ===  METHOD  ========================================================================
+--    Signature:  Actor:path_to ( x, y ) -> table
 --  Description:  Obtain a move describing a world-assisted path from the current
 --                position.
---   Parameters:  x : [number] : horizontal component of the destination point
---                y : [number] : vertical component of the destination point
+--   Parameters:  position : [table] : Vector-like location representing the destination
 --      Returns:  A movement description object.
 -- =====================================================================================
 --]]
-function Actor.path_to ( x, y )
-	return { type = 'path', dest = { x = x, y = y } }
+function Actor:path_to ( position )
+	return { type = 'path', dest = position }
 end
+
 
 
 --[[
@@ -286,10 +247,11 @@ end
 ====================================================================================
 --]]
 
-
 function Actor:dist_to_next_move ( )
 	local move = self:current_move()
-	return Vector.mag({x = move.dest.x - self.loc.x(), y = move.dest.y - self.loc.y()})
+	local w_loc = self.position.loc.object:transform(self.zone, self.world)
+
+	return w_pos:distance_to(move.dest)
 end
 
 
@@ -299,69 +261,17 @@ end
 
 
 function Actor:update ( )
+	local lp_body = self.lp.body
 	local move = self:current_move()
-
-	-- Stop at the end of the move list.
-	if not move then
-		self.path.step = 0
-
-		self.force.x = 0
-		self.force.y = 0
-
-		self.body:setLinearVelocity(0, 0)
-		self.body:setAngularVelocity(0)
-
-		self.turning = false
-		self.moving = false
-
-		return
-	end
-
-	self:expand_current_move()
-
-
-	local dest_heading = Vector(move.dest.x - self.loc.x(), move.dest.y - self.loc.y())
-	local dest_angle = math.atan2(dest_heading.y, dest_heading.x)
-
-	self.deflection = dest_angle - self.angle()
-
-
-	local time_to_next = self:time_to_next_move()
-	local next_move = self:next_move()
-
-	if false and next_move and not self.turning and time_to_next < 1 then
-		local next_heading = Vector(next_move.dest.x - move.dest.x, next_move.dest.y - move.dest.y)
-		local next_angle = math.atan2(next_heading.y, next_heading.x)
-		local next_deflection = next_angle - self.angle()
-
-		if time_to_next < 1 then
-			self.body:applyAngularImpulse(next_deflection * self.body:getMass())
-			self.turning = true
-		end
-	end
+	local w_pos = self.position.loc.object:transform(self.zone, self.world)
 
 
 	-- Get the next move when the current one is completed.
-	if not self.moving or self:dist_to_next_move() < 0.5 then
-		self.path.step = self.path.step + 1
-		self.turning = false
-
-
-		self.body:setAngle(dest_angle)
-		self.force = dest_heading:unit() * self.max_accel
-		self.body:setLinearVelocity(self.force.x, self.force.y)
-		self.moving = true
-	end
-end
-
-function Actor:update ( )
-	local move = self:current_move()
-
-	-- Get the next move when the current one is completed.
-	if move and Vector.mag({x = move.dest.x - self.loc.x(), y = move.dest.y - self.loc.y()}) < 0.5 then
+	if move and w_pos:distance_to(move.dest) < 0.5 then
 		self.path.step = self.path.step + 1
 		move = self:current_move()
 	end
+
 
 	-- Stop at the end of the move list.
 	if not move then
@@ -370,8 +280,8 @@ function Actor:update ( )
 
 		self.force.x = 0
 		self.force.y = 0
-		self.body:setLinearVelocity(0, 0)
-		self.body:setAngularVelocity(0)
+		lp_body:setLinearVelocity(0, 0)
+		lp_body:setAngularVelocity(0)
 
 		self.turning = false
 		self.moving = false
@@ -379,22 +289,104 @@ function Actor:update ( )
 		return
 	end
 
+
 	self:expand_current_move()
 
-	local dest_heading = Vector(move.dest.x - self.loc.x(), move.dest.y - self.loc.y())
+
+	local dest_heading = Vector(move.dest.x - world_pos.x, move.dest.y - world_pos.y)
 	local dest_angle = math.atan2(dest_heading.y, dest_heading.x)
 
-	self.deflection = dest_angle - self.angle()
+	self.deflection = dest_angle - world_pos.angle
 
 	if (math.abs(self.deflection) > math.pi / 20) then
-		self.body:setLinearVelocity(0,0)
-		self.body:applyAngularImpulse(0.1 * (self.deflection / math.abs(self.deflection)))
+		lp_body:setLinearVelocity(0,0)
+		lp_body:applyAngularImpulse(0.1 * (self.deflection / math.abs(self.deflection)))
 	else
-		self.body:setAngularVelocity(0)
-		self.body:setAngle(dest_angle)
+		lp_body:setAngularVelocity(0)
+		lp_body:setAngle(dest_angle)
 
 		self.force = dest_heading:unit() * self.max_accel
 
-		self.body:setLinearVelocity(self.force.x, self.force.y)
+		lp_body:setLinearVelocity(self.force.x, self.force.y)
 	end
+end
+
+
+function Actor:draw( )
+	Body.draw(self)
+
+	self:draw_start()
+
+	local loc = self.position.loc
+	local angle = self.position.angle
+	local shape = self.lp.shape
+	local bb = { topleft = {}, bottomright = {} }
+
+
+	bb.topleft.x, bb.topleft.y, bb.bottomright.x, bb.bottomright.y = shape:computeAABB(0, 0, angle, 1)
+
+
+	-- Force vector.
+	lg.setColor(color.FIRE_ENGINE_RED); lg.setLine(1, 'smooth')
+	lg.line(loc.x, loc.y, loc.x + self.force.x, loc.y + self.force.y)
+
+
+	-- Name tag.
+	lg.setColor(color.PERIWINKLE); lg.setFont(font10)
+	lg.print(self.name,
+	         loc.x - font10:getWidth(self.name) / 2,
+	         loc.y - math.abs(bb.topleft.y) - font10:getHeight() * 1.5,
+	         0, 1, 1, 0, 0, 0, 0)
+
+
+	-- Path to objective.
+	if self:current_move() then
+		-- Path lines.
+		lg.setColor(color.PINK); lg.setLine(2, 'smooth')
+
+		local src = loc
+		for i, move in ipairs(self.path.moves) do
+			if i >= self.path.step then
+				local dest = move.dest
+
+				lg.line(src.x, src.y, dest.x, dest.y)
+
+				src = dest
+			end
+		end
+
+
+		-- Path nodes.
+		lg.setColor(color.WHITE); lg.setLine(2, 'smooth')
+
+		for i, move in ipairs(self.path.moves) do
+			if i >= self.path.step then
+				lg.circle('fill', move.dest.x, move.dest.y, 3, 10)
+			end
+		end
+
+
+		-- Direction to objective indicator.
+		if shape:getType() == 'circle' then
+			local r = shape:getRadius()
+
+			lg.setColor(color.MAROON); lg.setLine(1, 'smooth')
+
+			lg.line(loc.x, loc.y,
+			        loc.x + r * math.cos(angle + self.deflection),
+			        loc.y - r * math.sin(angle + self.deflection))
+		end
+	end
+
+
+	-- Selection box.
+	if self.selected then
+		lg.setColor(color.WHITE)
+		lg.rectangle('line',
+		             pos.x - math.abs(bb.topleft.x), pos.y - math.abs(bb.topleft.y),
+		             bb.bottomright.x - bb.topleft.x, bb.bottomright.y - bb.topleft.y)
+	end
+
+
+	self:draw_end()
 end

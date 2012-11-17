@@ -74,3 +74,18 @@ function Class ( name, super, members )
 		end
 	})
 end
+
+
+--[[
+-- ===  GLOBAL FUNCTION  ===============================================================
+--    Signature:  is_a ( var, class ) -> boolean
+--  Description:  Determine whether 'var' represents an object of type 'class'.
+--   Parameters:    var : [any]   : variable to test
+--                class : [table] : class object to test against
+--      Returns:  The 'var' object if it is an object of the indicated class; otherwise,
+--                false.
+-- =====================================================================================
+--]]
+function is_a ( var, class )
+	return type(var) == 'table' and type(var.is_a) == 'function' and var:is_a(class) and var
+end

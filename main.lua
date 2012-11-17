@@ -1,3 +1,6 @@
+local color = require'include.color'
+
+
 function love.load()
 	require('libraries.loveframes.init')
 	require('classes.Game')

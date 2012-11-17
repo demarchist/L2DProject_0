@@ -1,3 +1,5 @@
+local lg = require'love.graphics'
+
 require'classes.Class'
 
 
@@ -6,12 +8,15 @@ game.named_zones = {}
 
 
 Zone = Class("Zone", nil, {
-	name      = "_unnamed_zone",       -- Zone names beginning with an underscore
-	parent    = nil,                   --            are not globally registered.
-	transform = {},                    -- Parent-relative transform matrix.
-	size      = { w = 100, h = 100 },
-	loc       = { x = 0, y = 0 },      -- Relative to parent.
-	units     = {},
+	name     = "_unnamed_zone",       -- Zone names beginning with an underscore are not globally registered.
+
+	parent   = nil,
+	center   = { x = 0, y = 0 },      -- Relative to parent.
+	scale    = { x = 1, y = 1 },      -- Relative to parent.
+	rotation = 0,                     -- Relative to parent.
+
+	size     = { w = 100, h = 100 },
+	units    = {},
 })
 
 
@@ -19,21 +24,52 @@ Zone = Class("Zone", nil, {
 -- ===  METHOD  ========================================================================
 --    Signature:  Zone:init ( [name] ) -> table
 --  Description:  Register a zone in the game environment.
---   Parameters:      name : [string] : name of the zone
+--   Parameters:  parent    : [table]  : parent zone of the new Zone object
+--                name      : [string] : name of the zone
 --      Returns:  Self (Zone object).
 -- =====================================================================================
 --]]
-function Zone:init ( name )
-	-- Register the zone in the game zone tables.
-	name = name or self.name
+function Zone:init ( parent, name )
+	self.parent = Zone.lookup(parent) or self.parent
+	self.name = name or self.name
 
-	if string.sub(name, 1, 1) ~= '_' then
-		game.named_zones[name] = self
+	if string.sub(self.name, 1, 1) ~= '_' then
+		game.named_zones[self.name] = self
 	end
 
-	game.zones[self] = name
+	game.zones[self] = self.name
+
+	getmetatable(self).__tostring = function ( self )
+		return "zone::" .. self.name
+	end
+
 
 	return self
+end
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Zone:push ( ) -> nil
+--  Description:  Push transforms from this zone to the parent World object.
+-- =====================================================================================
+--]]
+function Zone:push ( )
+	local z = self
+
+	if not z.world then
+		return error("Zone:push() error [No World associated with this Zone.].")
+	end
+
+	lg.push()
+
+	while z ~= self.world do
+		lg.scale(z.scale.x, z.scale.y)
+		lg.rotate(z.rotation)
+		lg.translate(z.center.x, z.center.y)
+
+		z = z.parent
+	end
 end
 
 
@@ -49,7 +85,7 @@ function Zone:add_unit ( unit )
 	unit = Unit.lookup(unit)
 
 	if unit then
-		self.units[unit] = unit.loc
+		self.units[unit] = unit.position
 	end
 
 	return self

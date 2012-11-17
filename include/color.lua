@@ -1,4 +1,4 @@
-color = {
+local colors = {
 	DARK_GRAY       = { 169, 169, 169 },
 	FERN_GREEN      = { 113, 188, 120 },
 	FIRE_ENGINE_RED = { 206,  32,  41 },
@@ -8,3 +8,5 @@ color = {
 	TAN             = { 210, 180, 140 },
 	WHITE           = { 255, 255, 255 },
 }
+
+return colors

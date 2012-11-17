@@ -1,4 +1,5 @@
 local lp = require'love.physics'
+local lg = require'love.graphics'
 
 require'classes.Class'
 require'classes.Vector'
@@ -19,7 +20,7 @@ function World:init ( )
 	self.map_graph = {}
 	for x = -math.floor(self.size.w/2), math.floor(self.size.w/2), 1 do
 		for y = -math.floor(self.size.h/2), math.floor(self.size.h/2), 1 do
-			table.insert(self.map_graph, {x = x, y = y})
+			table.insert(self.map_graph, Vector(x, y))
 		end
 	end
 
@@ -40,21 +41,21 @@ function World:update_pathing ( radius )
 	local physics = self.physics
 
 
-	for _, pt in ipairs(self.map_graph) do
-		path_graph[pt.x] = path_graph[pt.x] or {}
-		path_graph[pt.x][pt.y] = path_graph[pt.x][pt.y] or 0
+	for _, p in ipairs(self.map_graph) do
+		path_graph[p.x] = path_graph[p.x] or {}
+		path_graph[p.x][p.y] = path_graph[p.x][p.y] or 0
 	end
 
-	for _, pt in ipairs(self.map_graph) do
+	for _, p in ipairs(self.map_graph) do
 		local function ray_cb()
-			path_graph[pt.y][pt.x] = 1
+			path_graph[p.y][p.x] = 1
 			return 0
 		end
 
-		physics:rayCast(pt.x, pt.y, pt.x+radius, pt.y       , ray_cb)
-		physics:rayCast(pt.x, pt.y, pt.x,        pt.y+radius, ray_cb)
-		physics:rayCast(pt.x, pt.y, pt.x-radius, pt.y       , ray_cb)
-		physics:rayCast(pt.x, pt.y, pt.x,        pt.y-radius, ray_cb)
+		physics:rayCast(p.x, p.y, p.x+radius, p.y       , ray_cb)
+		physics:rayCast(p.x, p.y, p.x,        p.y+radius, ray_cb)
+		physics:rayCast(p.x, p.y, p.x-radius, p.y       , ray_cb)
+		physics:rayCast(p.x, p.y, p.x,        p.y-radius, ray_cb)
 	end
 
 	self.pathers[radius] = require'libraries.Jumper.init'(path_graph, 0, true, 'EUCLIDIAN')
@@ -64,14 +65,14 @@ function World:update_pathing ( radius )
 end
 
 
-function World:path ( x1, y1, x2, y2, radius )
-	radius = radius or 1
-
+function World:path ( p1, p2, radius )
+	local pather = self.pathers[radius or 1] or self:update_pathing(radius or 1)
 	local floor = math.floor
-	local pather = self.pathers[radius] or self:update_pathing(radius)
+	local path = pather:getPath(floor(p1.x), floor(p1.y), floor(p2.x), floor(p2.y))
 
-
-	return pather:getPath(floor(x1), floor(y1), floor(x2), floor(y2))
+	for i, p in ipairs(path) do
+		path[i] = Vector(p)
+	end
 end
 
 

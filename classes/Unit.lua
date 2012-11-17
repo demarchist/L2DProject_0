@@ -1,7 +1,7 @@
-require'classes/Class'
-require'classes/Vector'
-require'classes/Zone'
-require'classes/Actor'
+require'classes.Class'
+require'classes.Vector'
+require'classes.Zone'
+require'classes.Actor'
 
 
 game.units = {}
@@ -15,8 +15,6 @@ Unit = Class("Unit", Actor, {
 	speed   = 1,
 	sight   = 0,
 	faction = nil,
-	zone    = nil,
-	loc     = { x = 0, y = 0 },  -- Relative to 'zone'.
 	targets = {},
 	status  = 'normal',          -- Dynamically generated on field access.
 })
@@ -32,20 +30,17 @@ Unit = Class("Unit", Actor, {
 -- ===  METHOD  ========================================================================
 --    Signature:  Unit:init ( [name, zone] ) -> table
 --  Description:  Register a unit in the game environment.
---   Parameters:  name : [string]       : name of the unit
---                zone : [table|string] : zone in which to place the unit
+--   Parameters:  zone : [table|string] : zone in which to place the unit
 --      Returns:  Self (Unit object).
 -- =====================================================================================
 --]]
 function Unit:init ( name, zone )
 	-- Register the unit in the game unit tables.
-	name = name or self.name
-
-	if name:sub(1, 1) ~= '_' then
-		game.named_units[name] = self
+	if self.name:sub(1, 1) ~= '_' then
+		game.named_units[self.name] = self
 	end
 
-	game.units[self] = name
+	game.units[self] = self.name
 
 
 	-- Associate the unit with a zone.
@@ -67,9 +62,9 @@ function Unit:init ( name, zone )
 
 
 	-- Allow state to be dynamically queried as a table field.
-	self.status = { _unit = self }
+	self.status = { _self = self }
 	setmetatable(self.status, {
-		__tostring = function( status ) return status._unit:get_status() end,
+		__tostring = function( table ) return table._self:get_status() end,
 	})
 
 
@@ -284,8 +279,8 @@ end
 function Unit:scan_visible ( )
 	self.sight_zone:remove_all_units()
 
-	for unit, loc in pairs(self.zone.units) do
-		if Vector.mag{ x = self.loc.x - loc.x, y = self.loc.y - loc.y } <= self.sight then
+	for unit, p in pairs(self.zone.units) do
+		if p:distance_to(self.position.object) <= self.sight then
 			if not self.affinities[unit] then self:add_target(unit) end
 
 			self.sight_zone:add_unit(unit)
