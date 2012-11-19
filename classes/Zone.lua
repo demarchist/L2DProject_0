@@ -1,6 +1,8 @@
 local lg = require'love.graphics'
 
 require'classes.Class'
+require'classes.Transform'
+require'classes.Vector'
 
 
 game.zones = {}
@@ -8,15 +10,13 @@ game.named_zones = {}
 
 
 Zone = Class("Zone", nil, {
-	name     = "_unnamed_zone",       -- Zone names beginning with an underscore are not globally registered.
+	name      = "_unnamed_zone",       -- Zone names beginning with an underscore are not globally registered.
 
-	parent   = nil,
-	center   = { x = 0, y = 0 },      -- Relative to parent.
-	scale    = { x = 1, y = 1 },      -- Relative to parent.
-	rotation = 0,                     -- Relative to parent.
+	parent    = nil,
+	transform = Transform2D(),         -- Relative to parent.
 
-	size     = { w = 100, h = 100 },
-	units    = {},
+	size      = { w = 100, h = 100 },
+	units     = {},
 })
 
 
@@ -43,7 +43,6 @@ function Zone:init ( parent, name )
 		return "zone::" .. self.name
 	end
 
-
 	return self
 end
 
@@ -51,7 +50,7 @@ end
 --[[
 -- ===  METHOD  ========================================================================
 --    Signature:  Zone:push ( ) -> nil
---  Description:  Push transforms from this zone to the parent World object.
+--  Description:  Push transforms between this zone and the nearest World object.
 -- =====================================================================================
 --]]
 function Zone:push ( )
@@ -60,16 +59,18 @@ function Zone:push ( )
 	lg.push()
 
 	while z and not is_a(z, World) do
-		lg.scale(z.scale.x, z.scale.y)
-		lg.rotate(z.rotation)
-		lg.translate(z.center.x, z.center.y)
+		local t = z.transform
+
+		lg.scale(t.scale.x, t.scale.y)
+		lg.rotate(t.rot)
+		lg.translate(t.loc.x, t.loc.y)
 
 		z = z.parent
 	end
 
 	if not z then
 		lg.pop()
-		return error("Zone:push() error [No World associated with this Zone.].")
+		return error("Zone:push() error [No World associated with this Zone].")
 	end
 end
 
@@ -86,7 +87,7 @@ function Zone:add_unit ( unit )
 	unit = Unit.lookup(unit)
 
 	if unit then
-		self.units[unit] = unit.position
+		self.units[unit] = unit.transform
 	end
 
 	return self

@@ -106,16 +106,13 @@ end
 function Unit:set_zone ( zone )
 	zone = Zone.lookup(zone)
 
-
-	if self.zone then
-		self.zone = self.zone:remove_unit(self)
+	if self.parent then
+		self.parent = self.parent:remove_unit(self)
 	end
-
 
 	if zone then
-		self.zone = zone:add_unit(self)
+		self.parent = zone:add_unit(self)
 	end
-
 
 	return self
 end
@@ -279,8 +276,8 @@ end
 function Unit:scan_visible ( )
 	self.sight_zone:remove_all_units()
 
-	for unit, p in pairs(self.zone.units) do
-		if p:distance_to(self.position.object) <= self.sight then
+	for unit, t in pairs(self.zone.units) do
+		if t.loc:distance_to(self.transform.loc) <= self.sight then
 			if not self.affinities[unit] then self:add_target(unit) end
 
 			self.sight_zone:add_unit(unit)

@@ -1,4 +1,4 @@
-local affine = require'include.affine'
+local a = require'include.affine'
 
 require'classes.Class'
 
@@ -12,23 +12,25 @@ local set_vector_operators  -- Meta-method definitions function.  Defined at end
 
 --[[
 -- ===  CONSTRUCTOR  ===================================================================
---    Signature:  Vector:new ( [init_or_x, y] ) -> table
+--    Signature:  Vector:new ( [init_or_x, y, zone] ) -> table
 --  Description:  Instantiate a vector object.
 --   Parameters:  init_or_x : [table|number] : object containing initial parameters or a
 --                                             value for the horizontal vector component
 --                        y : [number]       : vertical component of the new vector
+--                     zone : [table]        : reference Zone for this vector
 --      Returns:  New Vector object table (in 'init', if provided).
 --         Note:  If 'init_or_x' is an initial parameter table, the parameters must be
 --                indexed at 'x' and 'y'.  The second arg is only considered when the
 --                first is a number.
 -- =====================================================================================
 --]]
-function Vector:new ( init_or_x, y )
+function Vector:new ( init_or_x, y, zone )
 	local vector = type(init_or_x) == 'table' and init_or_x or {}
 
 
 	vector.x = type(init_or_x) == 'number' and init_or_x or vector.x
 	vector.y = type(init_or_x) == 'number' and y or vector.y
+	vector.zone = zone
 
 
 	Vector.super.new(self, vector)
@@ -88,55 +90,6 @@ function Vector:unit ( )
 		return self / mag
 	else
 		return { x = self.x / mag, y = self.y / mag }
-	end
-end
-
-
---[[
--- ===  METHOD  ========================================================================
---    Signature:  Vector:transform ( from, to ) -> table
---  Description:  Transform the representation of this Vector from one zone to another.
---   Parameters:  from : [table] : Zone relative to which the Vector currently refers
---                  to : [table] : Zone to which this Vector is to be transformed
---      Returns:  New Vector object.
--- =====================================================================================
---]]
-function Vector:transform ( from, to )
-	if from == to then
-		return Vector(self)
-	end
-
-
-	local z = from
-	local m = affine.trans(0, 0)
-
-
-	while z and z ~= to do
-		m = affine.trans(z.center.x, z.center.y) * affine.rotate(z.rotation) * affine.scale(z.scale.x, z.scale.y) * m
-		z = z.parent
-	end
-
-
-	if z ~= to then
-		to, from = from, to
-		z = from
-		m = affine.trans(0, 0)
-
-		while z and z ~= to do
-			m = affine.trans(z.center.x, z.center.y) * affine.rotate(z.rotation) * affine.scale(z.scale.x, z.scale.y) * m
-			z = z.parent
-		end
-
-		if z == to then
-			m = affine.inverse(m)
-		end
-	end
-
-
-	if z then
-		return Vector(m(self.x, self.y))
-	else
-		error("Vector:transform() error [Zones must be related].", 2)
 	end
 end
 
@@ -230,4 +183,91 @@ end
 --]]
 function Vector:distance_to ( point_or_x, y )
 	return self:distance_sq(point_or_x, y) ^ 0.5
+end
+
+
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Vector:transform ( from[, to] ) -> table
+--  Description:  Transform the representation of this Vector from one Zone to another.
+--   Parameters:  from : [table] : Zone relative to which the Vector currently refers
+--                  to : [table] : Zone to which this Vector is to be transformed
+--      Returns:  New Vector object, with 'zone' field set to the destination Zone.
+--        Notes:  If passed a single argument, the function will treat it as the
+--                destination Zone and use 'self.zone' as the origin Zone.
+--                Zones must have a common ancestor.
+-- =====================================================================================
+--]]
+function Vector:transform ( from, to )
+	local ret
+
+	if not to then
+		from, to = self.zone, from
+	end
+
+
+	if from == to then
+		ret = Vector(self)
+	else
+		local ancestry = function ( zone )
+			local ancestry = {}
+
+			while zone do
+				table.insert(ancestry, zone)
+				zone = zone.parent or zone.zone
+			end
+
+			return ancestry
+		end
+
+		-- Build a relationship path between zones through the lowest common ancestor.
+		local up = ancestry(from)
+		local dn = ancestry(to)
+		local pivot
+
+		for f, fzone in ipairs(up) do
+			for t, tzone in ipairs(dn) do
+				if tzone == fzone then
+					pivot = true
+				end
+
+				if pivot then
+					dn[t] = nil
+				end
+			end
+
+			if pivot then
+				up[f] = nil
+			end
+		end
+
+		if not pivot then
+			return error("Vector:transform() error [Zones must be related].", 2)
+		end
+
+
+		-- Multipy transformations upwards from origin to ancestor and downwards (inverse) to destination.
+		local m = a.trans(0, 0)
+		for _, z in ipairs(up) do
+			local t = z.transform
+			m = a.trans(t.loc.x, t.loc.y) * a.rotate(t.rot) * a.scale(t.scale.x, t.scale.y) * m
+		end
+
+		local inv_m = a.trans(0, 0)
+		for _, z in ipairs(dn) do
+			local t = z.transform
+			inv_m = a.trans(t.loc.x, t.loc.y) * a.rotate(t.rot) * a.scale(t.scale.x, t.scale.y) * inv_m
+		end
+
+		m = m * a.inverse(inv_m)
+
+
+		-- Transform and set the return vector.
+		ret = Vector(m(self.x, self.y))
+	end
+
+
+	ret.zone = to
+
+	return ret
 end

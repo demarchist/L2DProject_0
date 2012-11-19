@@ -1,5 +1,7 @@
 local lp = require'love.physics'
 local lg = require'love.graphics'
+local Jumper = require'libraries.Jumper.init'
+
 
 require'classes.Class'
 require'classes.Vector'
@@ -20,7 +22,7 @@ function World:init ( )
 	self.map_graph = {}
 	for x = -math.floor(self.size.w/2), math.floor(self.size.w/2), 1 do
 		for y = -math.floor(self.size.h/2), math.floor(self.size.h/2), 1 do
-			table.insert(self.map_graph, Vector(x, y))
+			table.insert(self.map_graph, Vector(x, y, self))
 		end
 	end
 
@@ -35,6 +37,7 @@ end
 
 function World:update_pathing ( radius )
 	radius = radius or 1
+
 	self.path_graphs[radius] = self.path_graphs[radius] or {}
 
 	local path_graph = self.path_graphs[radius]
@@ -58,7 +61,7 @@ function World:update_pathing ( radius )
 		physics:rayCast(p.x, p.y, p.x,        p.y-radius, ray_cb)
 	end
 
-	self.pathers[radius] = require'libraries.Jumper.init'(path_graph, 0, true, 'EUCLIDIAN')
+	self.pathers[radius] = Jumper(path_graph, 0, true, 'EUCLIDIAN')
 
 
 	return self.pathers[radius]
@@ -71,7 +74,7 @@ function World:path ( p1, p2, radius )
 	local path = pather:getPath(floor(p1.x), floor(p1.y), floor(p2.x), floor(p2.y))
 
 	for i, p in ipairs(path) do
-		path[i] = Vector(p)
+		path[i] = Vector(p.x, p.y, self)
 	end
 end
 

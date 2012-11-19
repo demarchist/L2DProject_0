@@ -139,8 +139,8 @@ function Actor:expand_move_at_step ( step )
 	local move = self.path.moves[step]
 
 	if move and move.type == 'path' then
-		local pos = step <= 1 and self.position.loc.object or self.path.moves[step-1].dest
-		local path_moves = self.world:path(pos, move.dest:transform(self.zone, self.world)) or {}
+		local pos = step <= 1 and self.transform.loc or self.path.moves[step-1].dest
+		local path_moves = self.world:path(pos, move.dest:transform(self.world)) or {}
 
 		self.path.moves[step] = nil
 
@@ -160,7 +160,7 @@ function Actor:expand_move_at_step ( step )
 				end
 			end
 
-			table.insert(self.path.moves, step + s, self.line_to(m:transform(self.world, self.zone)))
+			table.insert(self.path.moves, step + s, self.line_to(m:transform(self.zone)))
 			s = s + 1
 		end
 	end
@@ -217,12 +217,13 @@ end
 --    Signature:  Actor:line_to ( x, y ) -> table
 --  Description:  Obtain a move describing a simple straight line from the current
 --                position.
---   Parameters:  position : [table] : Vector-like location representing the destination
+--   Parameters:  location : [table] : Vector-like location representing the destination
 --      Returns:  A movement description object.
 -- =====================================================================================
 --]]
-function Actor:line_to ( position )
-	return { type = 'line', dest = position }
+function Actor:line_to ( location )
+	location.zone = location.zone or self.parent
+	return { type = 'line', dest = Vector(location) }
 end
 
 
@@ -235,8 +236,9 @@ end
 --      Returns:  A movement description object.
 -- =====================================================================================
 --]]
-function Actor:path_to ( position )
-	return { type = 'path', dest = position }
+function Actor:path_to ( location )
+	location.zone = location.zone or self.parent
+	return { type = 'path', dest = Vector(location) }
 end
 
 
@@ -248,10 +250,7 @@ end
 --]]
 
 function Actor:dist_to_next_move ( )
-	local move = self:current_move()
-	local w_loc = self.position.loc.object:transform(self.zone, self.world)
-
-	return w_pos:distance_to(move.dest)
+	return self._w.loc:distance_to(self:current_move().dest:transform(self.world))
 end
 
 
@@ -263,11 +262,10 @@ end
 function Actor:update ( )
 	local lp_body = self.lp.body
 	local move = self:current_move()
-	local w_pos = self.position.loc.object:transform(self.zone, self.world)
 
 
 	-- Get the next move when the current one is completed.
-	if move and w_pos:distance_to(move.dest) < 0.5 then
+	if move and self._w.loc:distance_to(move.dest:transform(self.world)) < 0.5 then
 		self.path.step = self.path.step + 1
 		move = self:current_move()
 	end
@@ -293,10 +291,10 @@ function Actor:update ( )
 	self:expand_current_move()
 
 
-	local dest_heading = Vector(move.dest.x - world_pos.x, move.dest.y - world_pos.y)
+	local dest_heading = Vector(move.dest.x - self._w..x, move.dest.y - self._w.y)
 	local dest_angle = math.atan2(dest_heading.y, dest_heading.x)
 
-	self.deflection = dest_angle - world_pos.angle
+	self.deflection = dest_angle - self._w.rot
 
 	if (math.abs(self.deflection) > math.pi / 20) then
 		lp_body:setLinearVelocity(0,0)
@@ -315,78 +313,76 @@ end
 function Actor:draw( )
 	Body.draw(self)
 
-	self:draw_start()
+	self:draw_start() do
 
-	local loc = self.position.loc
-	local angle = self.position.angle
-	local shape = self.lp.shape
-	local bb = { topleft = {}, bottomright = {} }
-
-
-	bb.topleft.x, bb.topleft.y, bb.bottomright.x, bb.bottomright.y = shape:computeAABB(0, 0, angle, 1)
+		local x, y, rot = self.transform.loc.x, self.transform.loc.y, self.transform.rot
+		local shape = self.lp.shape
+		local bb = { topleft = {}, bottomright = {} }
 
 
-	-- Force vector.
-	lg.setColor(color.FIRE_ENGINE_RED); lg.setLine(1, 'smooth')
-	lg.line(loc.x, loc.y, loc.x + self.force.x, loc.y + self.force.y)
+		bb.topleft.x, bb.topleft.y, bb.bottomright.x, bb.bottomright.y = shape:computeAABB(0, 0, rot, 1)
 
 
-	-- Name tag.
-	lg.setColor(color.PERIWINKLE); lg.setFont(font10)
-	lg.print(self.name,
-	         loc.x - font10:getWidth(self.name) / 2,
-	         loc.y - math.abs(bb.topleft.y) - font10:getHeight() * 1.5,
-	         0, 1, 1, 0, 0, 0, 0)
+		-- Force vector.
+		lg.setColor(color.FIRE_ENGINE_RED); lg.setLine(1, 'smooth')
+		lg.line(x, y, x + self.force.x, y + self.force.y)
 
 
-	-- Path to objective.
-	if self:current_move() then
-		-- Path lines.
-		lg.setColor(color.PINK); lg.setLine(2, 'smooth')
+		-- Name tag.
+		lg.setColor(color.PERIWINKLE); lg.setFont(font10)
+		lg.print(self.name,
+		         x - font10:getWidth(self.name) / 2,
+		         y - math.abs(bb.topleft.y) - font10:getHeight() * 1.5,
+		         0, 1, 1, 0, 0, 0, 0)
 
-		local src = loc
-		for i, move in ipairs(self.path.moves) do
-			if i >= self.path.step then
-				local dest = move.dest
 
-				lg.line(src.x, src.y, dest.x, dest.y)
+		-- Path to objective.
+		if self:current_move() then
+			-- Path lines.
+			lg.setColor(color.PINK); lg.setLine(2, 'smooth')
 
-				src = dest
+			local src = Vector(x, y)
+			for i, move in ipairs(self.path.moves) do
+				if i >= self.path.step then
+					local dest = move.dest
+
+					lg.line(src.x, src.y, dest.x, dest.y)
+
+					src = dest
+				end
+			end
+
+
+			-- Path nodes.
+			lg.setColor(color.WHITE); lg.setLine(2, 'smooth')
+
+			for i, move in ipairs(self.path.moves) do
+				if i >= self.path.step then
+					lg.circle('fill', move.dest.x, move.dest.y, 3, 10)
+				end
+			end
+
+
+			-- Direction to objective indicator.
+			if shape:getType() == 'circle' then
+				local r = shape:getRadius()
+
+				lg.setColor(color.MAROON); lg.setLine(1, 'smooth')
+
+				lg.line(x, j,
+				x + r * math.cos(rot + self.deflection),
+				y - r * math.sin(rot + self.deflection))
 			end
 		end
 
 
-		-- Path nodes.
-		lg.setColor(color.WHITE); lg.setLine(2, 'smooth')
-
-		for i, move in ipairs(self.path.moves) do
-			if i >= self.path.step then
-				lg.circle('fill', move.dest.x, move.dest.y, 3, 10)
-			end
+		-- Selection box.
+		if self.selected then
+			lg.setColor(color.WHITE)
+			lg.rectangle('line',
+			x - math.abs(bb.topleft.x), y - math.abs(bb.topleft.y),
+			bb.bottomright.x - bb.topleft.x, bb.bottomright.y - bb.topleft.y)
 		end
 
-
-		-- Direction to objective indicator.
-		if shape:getType() == 'circle' then
-			local r = shape:getRadius()
-
-			lg.setColor(color.MAROON); lg.setLine(1, 'smooth')
-
-			lg.line(loc.x, loc.y,
-			        loc.x + r * math.cos(angle + self.deflection),
-			        loc.y - r * math.sin(angle + self.deflection))
-		end
-	end
-
-
-	-- Selection box.
-	if self.selected then
-		lg.setColor(color.WHITE)
-		lg.rectangle('line',
-		             pos.x - math.abs(bb.topleft.x), pos.y - math.abs(bb.topleft.y),
-		             bb.bottomright.x - bb.topleft.x, bb.bottomright.y - bb.topleft.y)
-	end
-
-
-	self:draw_end()
+	end self:draw_end()
 end
