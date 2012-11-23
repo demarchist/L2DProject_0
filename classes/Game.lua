@@ -1,5 +1,6 @@
 local lp = require'love.physics'
 local lg = require'love.graphics'
+local color = require'include.color'
 
 require'classes.Class'
 require'classes.Unit'
@@ -20,33 +21,40 @@ Game = Class("Game", nil, {
 
 
 function Game:init ( )
-	local width, height = lg.getMode()
-
-
-	-- Screen.
-	local s_size = { w = width, h = height }
-	self.screen = Zone{ name = "screen", size = s_size }
-	print("Screen:")
-	print(self.screen.transform.matrix)
-
-
-	-- World.
-	local w_size = { w = 200, h = 200 }
-	local w_xform = Transform2D {
-		loc = Vector(w_size.w/2, w_size.h/2),
-	}
-	self.world = World{ name = "world", parent = self.screen, size = w_size, transform = w_xform }
-	print("World:")
-	print(self.world.transform.matrix)
+	local s_size = Vector(lg.getMode())
+	local p_size = Vector(2, 2)
+	local c_size = Vector(60, 60)
+	local w_size = Vector(200, 200)
 
 
 	-- Camera.
-	local c_size = { w = 2, h = 2 }
-	local c_scale = Vector(c_size.w / s_size.w, c_size.h / s_size.h)
-	local c_xform = Transform2D{ loc = Vector(c_size.w/2, c_size.h/2), scale = c_scale }
-	self.cam = Camera{ name = "camera", parent = self.world, size = c_size, transform = c_xform }
-	print("Camera:")
-	print(self.cam.transform.matrix)
+	local c_xform = Transform2D {
+	}
+	self.cam = Camera{ name = "camera", size = c_size, transform = c_xform }
+
+
+	-- World.
+	local w_xform = Transform2D {
+	}
+	self.world = World{ name = "world", parent = self.cam, size = w_size, transform = w_xform }
+
+
+	self.cam.world = self.world
+
+
+	-- Projection.
+	local p_xform = Transform2D {
+		scale = Vector(2/c_size.x, 2/c_size.y),
+	}
+	self.proj = Zone{ name = "projection", parent = self.cam, size = p_size, transform = p_xform }
+
+
+	-- Screen.
+	local s_xform = Transform2D {
+		scale = Vector(2/s_size.x, 2/s_size.y),
+		loc   = Vector(-p_size/2, -p_size/2)
+	}
+	self.screen = Zone{ name = "screen", parent = self.proj, size = s_size, transform = s_xform }
 
 
 
@@ -135,7 +143,31 @@ function Game:drawWorld ( )
 		self:draw_path_map()
 	end
 
-	self.cam:render()
+	if false then
+		self.cam:render()
+	end
+
+	lg.setColor(128, 128, 128, 128)
+	self.world:push()
+	for _, p in ipairs(self.world.map_graph) do
+		lg.circle('fill', p.x, p.y, 1)
+	end
+	self.world:pop()
+
+	self.screen:push() do
+		lg.setColor(255, 255, 0, 64)
+		lg.rectangle('fill', 0.5, 0.5, 100, 100)
+
+		self.proj:push() do
+			lg.setColor(255, 0, 0, 64)
+			lg.rectangle('fill', 0.5, 0.5, 100, 100)
+
+			self.cam:push() do
+				lg.setColor(0, 255, 0, 64)
+				lg.rectangle('fill', 0.5, 0.5, 100, 100)
+			end self.cam:pop()
+		end self.proj:pop()
+	end self.screen:pop()
 end
 
 
@@ -145,8 +177,9 @@ function Game:mousepressed ( x, y, button )
 
 	local pick = Vector(x, y, self.screen)
 	print("Screen:", pick)
-	print("Camera:", pick:transform(self.cam))
-	print("World:", pick:transform(self.world))
+	print("NDC:", pick:transform(self.proj, nil, true))
+	print("Camera:", pick:transform(self.cam, nil, true))
+	print("World:", pick:transform(self.world, nil, true))
 	print()
 end
 
@@ -157,18 +190,18 @@ end
 
 
 function Game:keypressed ( key, unicode )
-	local cam_center = self.cam.transform.loc
+	local world_loc = self.world.transform.loc
 	-- https://love2d.org/wiki/KeyConstant
-	if(key == 'b') then
+	if key == 'b' then
 	elseif key == 'a' then
 	elseif key == 'up' then
-		cam_center.y = cam_center.y + 10
+		world_loc.y = world_loc.y + 10
 	elseif key == 'down' then
-		cam_center.y = cam_center.y - 10
+		world_loc.y = world_loc.y - 10
 	elseif key == 'left' then
-		cam_center.x = cam_center.x - 10
+		world_loc.x = world_loc.x + 10
 	elseif key == 'right' then
-		cam_center.x = cam_center.x + 10
+		world_loc.x = world_loc.x - 10
 	elseif key == 'escape' then
 		love.event.push('quit')   -- actually causes the app to quit
 	end

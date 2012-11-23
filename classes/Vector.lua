@@ -198,7 +198,7 @@ end
 --                Zones must have a common ancestor.
 -- =====================================================================================
 --]]
-function Vector:transform ( from, to )
+function Vector:transform ( from, to, debug )
 	local ret
 
 	if not to then
@@ -214,7 +214,7 @@ function Vector:transform ( from, to )
 
 			while zone do
 				table.insert(ancestry, zone)
-				zone = zone.parent or zone.zone
+				zone = zone.parent
 			end
 
 			return ancestry
@@ -243,6 +243,35 @@ function Vector:transform ( from, to )
 
 		if not pivot then
 			return error("Vector:transform() error [Zones must be related].", 2)
+		end
+
+
+		if debug then
+			local path = ""
+			if #up > 0 then
+				local u = {}
+
+				for _, z in ipairs(up) do
+					table.insert(u, tostring(z))
+				end
+
+				path = path .. table.concat(u, " <- ")
+				if #dn > 0 then
+					path = path .. " (pivot) "
+				end
+			end
+
+			if #dn > 0 then
+				local d = {}
+
+				for _, z in ipairs(dn) do
+					table.insert(d, tostring(z))
+				end
+
+				path = path .. table.concat(d, " -> ")
+			end
+
+			print(path)
 		end
 
 

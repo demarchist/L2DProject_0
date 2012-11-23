@@ -1,4 +1,5 @@
 local lg = require'love.graphics'
+local a = require'include.affine'
 
 require'classes.Class'
 require'classes.Transform'
@@ -15,7 +16,7 @@ Zone = Class("Zone", nil, {
 	parent    = nil,
 	transform = Transform2D(),         -- Relative to parent.
 
-	size      = { w = 100, h = 100 },
+	size      = Vector(100, 100),
 	units     = {},
 })
 
@@ -39,7 +40,7 @@ function Zone:init ( parent, name )
 
 	game.zones[self] = self.name
 
-	getmetatable(self).__tostring = function ( self )
+	getmetatable(self).__tostring = function ( )
 		return "zone::" .. self.name
 	end
 
@@ -50,28 +51,28 @@ end
 --[[
 -- ===  METHOD  ========================================================================
 --    Signature:  Zone:push ( ) -> nil
---  Description:  Push transforms between this zone and the nearest World object.
+--  Description:  Push this zone's transforms onto the Love2D graphics CTM stack.
 -- =====================================================================================
 --]]
 function Zone:push ( )
-	local z = self
+	local t = self.transform
 
 	lg.push()
 
-	while z and not is_a(z, World) do
-		local t = z.transform
+	lg.scale(t.scale.x, t.scale.y)
+	lg.rotate(t.rot)
+	lg.translate(t.loc.x, t.loc.y)
+end
 
-		lg.scale(t.scale.x, t.scale.y)
-		lg.rotate(t.rot)
-		lg.translate(t.loc.x, t.loc.y)
 
-		z = z.parent
-	end
-
-	if not z then
-		lg.pop()
-		return error("Zone:push() error [No World associated with this Zone].")
-	end
+--[[
+-- ===  METHOD  ========================================================================
+--    Signature:  Zone:pop ( ) -> nil
+--  Description:  Pop the Love2D graphics CTM stack.
+-- =====================================================================================
+--]]
+function Zone:pop ( )
+	lg.pop()
 end
 
 

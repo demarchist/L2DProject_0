@@ -44,19 +44,6 @@ function Body:init ( )
 	end
 
 
-	-- Pseudo-table to obtain common world-relative properties.
-	self._w = {}
-	setmetatable(self._w, {
-		__index = function ( table, key )
-			return key == 'x'   and body:getX()
-			    or key == 'y'   and body:getY()
-			    or key == 'rot' and body:getAngle()
-			    or key == 'loc' and Vector(body:getX(), body:getY(), self.world)
-			    or table[key]
-		end
-	})
-
-
 	-- Create associated Love2D physics objects.
 	local body = self.lp.body or lp.newBody(self.world.physics, nil, nil, self.lp.type)
 	local shape = self.lp.shape or lp.newCircleShape(1)
@@ -69,6 +56,19 @@ function Body:init ( )
 	self.lp.body = body
 	self.lp.shape = shape
 	self.lp.fixture = fixture
+
+
+	-- Pseudo-table to obtain common world-relative properties.
+	self._w = {}
+	setmetatable(self._w, {
+		__index = function ( table, key )
+			return key == 'x'   and body:getX()
+			    or key == 'y'   and body:getY()
+			    or key == 'rot' and body:getAngle()
+			    or key == 'loc' and Vector(body:getX(), body:getY(), self.world)
+			    or rawget(table, key)
+		end
+	})
 
 
 	-- Meta-methods to synchronize with the associated Love2D physics body.
@@ -116,7 +116,7 @@ function Body:init ( )
 
 	mt.__index = function ( table, key )
 		if key == 'rot' then
-			return self._w.angle  -- FIXME: Apply transformations.
+			return self._w.rot  -- FIXME: Apply transformations.
 		end
 
 		if key == 'loc' then
@@ -125,7 +125,7 @@ function Body:init ( )
 
 		return type(_index) == 'function' and _index(table, key)
 		    or type(_index) == 'table' and _index[key]
-		    or table[key]
+		    or rawget(table, key)
 	end
 
 	mt.__newindex = function ( table, key, value )
@@ -134,7 +134,7 @@ function Body:init ( )
 
 		elseif key == 'loc' then
 			for k, v in ipairs(value) do
-				table.trans[k] = v
+				table.loc[k] = v
 			end
 
 		elseif _newindex then
@@ -214,7 +214,7 @@ end
 Body.draw_funcs = {
 
 	circle = function ( self )
-		local x, y, rot = self.transform.trans.x, self.transform.trans.y, self.transform.rot
+		local x, y, rot = self.transform.loc.x, self.transform.loc.y, self.transform.rot
 		local r = self.lp.shape:getRadius()
 
 		lg.setColor(color.TAN); lg.setLine(2, 'smooth')

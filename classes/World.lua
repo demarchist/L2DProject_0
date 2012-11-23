@@ -20,8 +20,8 @@ function World:init ( )
 
 
 	self.map_graph = {}
-	for x = -math.floor(self.size.w/2), math.floor(self.size.w/2), 1 do
-		for y = -math.floor(self.size.h/2), math.floor(self.size.h/2), 1 do
+	for x = -math.floor(self.size.x/2), math.floor(self.size.x/2), 1 do
+		for y = -math.floor(self.size.y/2), math.floor(self.size.y/2), 1 do
 			table.insert(self.map_graph, Vector(x, y, self))
 		end
 	end

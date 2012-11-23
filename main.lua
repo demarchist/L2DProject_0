@@ -5,7 +5,6 @@ require'classes.Game'
 
 
 function love.load ( )
-
 	love.graphics.setCaption("L2DProject_0")
 	love.graphics.setMode(800, 600, false, false, 0)
 	love.graphics.setBackgroundColor(120, 134, 107)
@@ -22,7 +21,7 @@ end
 
 function love.draw ( )
 	game:drawWorld()
-	loveframes.draw()
+--	loveframes.draw()
 end
 
 

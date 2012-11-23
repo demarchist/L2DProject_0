@@ -1,6 +1,7 @@
 local love = love
 local lg = require'love.graphics'
 local color = require'include.color'
+local a = require'include.affine'
 
 require'classes.Zone'
 require'classes.Vector'
@@ -12,14 +13,8 @@ local font10 = lg.newFont(10)
 Camera = Class("Camera", Zone, {
 	target_entity = nil,
 	select_box    = { toggle = false, loc1 = {}, loc2 = {} },
+	world         = nil,
 })
-
-
-function Camera:init ( )
-	self.world = self.parent
-
-	return self
-end
 
 
 function Camera:update_transform ( )
@@ -115,9 +110,10 @@ function Camera:render ( )
 
 
 	-- World-zone objects.
-	local topl = Vector(-1, 1):transform(self, self.world)
-	local botr = Vector(1, -1):transform(self, self.world)
+	local topl = Vector(-self.size, -self.size):transform(self, self.world)
+	local botr = Vector(self.size, self.size):transform(self, self.world)
 	local fixtures = {}
+
 
 	self.world.physics:queryBoundingBox(topl.x, topl.y, botr.x, botr.y, function ( fixture )
 		table.insert(fixtures, fixture)
@@ -134,20 +130,28 @@ function Camera:render ( )
 	end
 
 
-	self:push() do
-		local x, y = self.transform.loc.x, self.transform.loc.y
+	do
+		local t1, t2
 
 		-- A cross-hair thing.
 		lg.setColor(color.TAN); lg.setLine(1, 'smooth')
-		lg.line(x - 10, y, x + 10, y)
-		lg.line(x, y - 10, x, y + 10)
+
+		t1 = Vector(-10, 0):transform(self, self.screen)
+		t2 = Vector(10, 0):transform(self, self.screen)
+		lg.line(t1.x, t1.y, t2.x, t2.y)
+
+		t1 = Vector(0, -10):transform(self, self.screen)
+		t2 = Vector(0, 10):transform(self, self.screen)
+		lg.line(t1.x, t1.y, t2.x, t2.y)
 
 
 		-- Draw a selection box.
-		lg.setColor(color.WHITE)
 		if self.select_box.toggle then
-			local sb = self.select_box
-			lg.rectangle('line', sb.loc1.x, sb.loc1.y, sb.loc2.x - sb.loc1.x, sb.loc2.y - sb.loc1.y)
+			lg.setColor(color.WHITE)
+
+			t1 = self.select_box.loc1:transform(self.screen)
+			t2 = self.select_box.loc2:transform(self.screen)
+			lg.rectangle('line', t1.x, t1.y, t2.x - t1.x, t1.y - t2.y)
 		end
-	end lg.pop()
+	end
 end

@@ -6,14 +6,13 @@ require'classes.Vector'
 
 Transform2D = Class("Transform2D", nil, {
 	zone  = nil,
-	loc   = Vector(0, 0),   -- location/center/translation
+	loc   = Vector(0, 0),    -- location/center/translation
 	rot   = 0,
 	scale = Vector(1, 1),
 
 	-- Read-only.
-	matrix = a.trans(0, 0), -- Dynamically generated.
+	matrix = a.trans(0, 0),  -- Dynamically generated.
 })
-
 
 
 --[[

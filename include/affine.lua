@@ -45,11 +45,11 @@ end
 
 local __tostring = function ( self )
 	local fmt = string.format
-	local head = "┌                   ┐\n"
-	local row  = "│%4d   %4d   %4d │\n"
-	local foot = "└                   ┘\n"
+	local head = "⎡%f  %f  %f⎤\n"
+	local row  = "⎢%f  %f  %f⎥\n"
+	local foot = "⎣%f  %f  %f⎦\n"
 
-	return head .. fmt(row, unpack(self[1])) .. fmt(row, unpack(self[2])) .. fmt(row, unpack(self[3])) .. foot
+	return fmt(head, unpack(self[1])) .. fmt(row, unpack(self[2])) .. fmt(foot, unpack(self[3]))
 end
 
 
